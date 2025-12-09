@@ -1,9 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using DataAccessLayer.Models;
+﻿using DataAccessLayer.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using System;
+using System.Collections.Generic;
 
-namespace DataAccessLayer.DbContexts;
+namespace DataAccessLayer.DbContxts;
 
 public partial class LostAndFoundSystemDbContext : DbContext
 {
@@ -32,15 +33,12 @@ public partial class LostAndFoundSystemDbContext : DbContext
 
     public virtual DbSet<User> Users { get; set; }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=localhost;uid=sa;pwd=12345;database= LostAndFoundSystemDb;TrustServerCertificate=True");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Campus>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__campus__3213E83FD052DCC1");
+            entity.HasKey(e => e.Id).HasName("PK__campus__3213E83F307D0F6A");
 
             entity.ToTable("campus");
 
@@ -65,7 +63,7 @@ public partial class LostAndFoundSystemDbContext : DbContext
 
         modelBuilder.Entity<Category>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__categori__3213E83F98CE6B2E");
+            entity.HasKey(e => e.Id).HasName("PK__categori__3213E83F2F0C8777");
 
             entity.ToTable("categories");
 
@@ -87,7 +85,7 @@ public partial class LostAndFoundSystemDbContext : DbContext
 
         modelBuilder.Entity<Item>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__item__3213E83FCE9BE69F");
+            entity.HasKey(e => e.Id).HasName("PK__item__3213E83FF11D1293");
 
             entity.ToTable("item");
 
@@ -128,7 +126,7 @@ public partial class LostAndFoundSystemDbContext : DbContext
 
         modelBuilder.Entity<ReturnRecord>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__return_r__3213E83F01DAB0D4");
+            entity.HasKey(e => e.Id).HasName("PK__return_r__3213E83F2C0DC57D");
 
             entity.ToTable("return_record");
 
@@ -175,7 +173,7 @@ public partial class LostAndFoundSystemDbContext : DbContext
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__roles__3213E83FF3687E10");
+            entity.HasKey(e => e.Id).HasName("PK__roles__3213E83F75CA083A");
 
             entity.ToTable("roles");
 
@@ -197,7 +195,7 @@ public partial class LostAndFoundSystemDbContext : DbContext
 
         modelBuilder.Entity<ServiceLocation>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__service___3213E83FE62722A5");
+            entity.HasKey(e => e.Id).HasName("PK__service___3213E83FA1331CE2");
 
             entity.ToTable("service_location");
 
@@ -228,7 +226,7 @@ public partial class LostAndFoundSystemDbContext : DbContext
 
         modelBuilder.Entity<Upload>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__upload__3213E83F2E38E2AF");
+            entity.HasKey(e => e.Id).HasName("PK__upload__3213E83F3BE998BE");
 
             entity.ToTable("upload");
 
@@ -268,11 +266,11 @@ public partial class LostAndFoundSystemDbContext : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__user__3213E83F119D56D6");
+            entity.HasKey(e => e.Id).HasName("PK__user__3213E83FB66860F9");
 
             entity.ToTable("user");
 
-            entity.HasIndex(e => e.Username, "UQ__user__F3DBC572492C0DB2").IsUnique();
+            entity.HasIndex(e => e.Username, "UQ__user__F3DBC572C10FFAEE").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Address)
