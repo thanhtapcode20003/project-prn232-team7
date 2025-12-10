@@ -10,6 +10,6 @@ namespace BusinessObjectLayer.IService
     {
         Task<AuthResponseDto> LoginAsync(LoginRequestDto request);
         Task<AuthResponseDto> RegisterAsync(RegisterRequestDto request);
-        Task<UserDto?> GetCurrentUserAsync(int userId);
+        Task<UserDto?> GetCurrentUserAsync(Guid userId);
     }
 }

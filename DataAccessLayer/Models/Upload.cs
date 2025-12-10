@@ -5,33 +5,17 @@ namespace DataAccessLayer.Models;
 
 public partial class Upload
 {
-    public int Id { get; set; }
+    public Guid UploadId { get; set; }
 
-    public string? Content { get; set; }
+    public Guid ItemId { get; set; }
 
-    public int IdItem { get; set; }
+    public string FileUrl { get; set; } = null!;
 
-    public int? Status { get; set; }
+    public DateTime? UploadTime { get; set; }
 
-    public int? StaffId { get; set; }
+    public string Status { get; set; } = null!;
 
-    public DateTime? DateCreate { get; set; }
+    public string? StatusAccept { get; set; }
 
-    public int? UserId { get; set; }
-
-    public int? StatusAccept { get; set; }
-
-    public int? StaffIdAccept { get; set; }
-
-    public DateTime? DateAccept { get; set; }
-
-    public string? Note { get; set; }
-
-    public virtual Item IdItemNavigation { get; set; } = null!;
-
-    public virtual User? Staff { get; set; }
-
-    public virtual User? StaffIdAcceptNavigation { get; set; }
-
-    public virtual User? User { get; set; }
+    public virtual Item Item { get; set; } = null!;
 }

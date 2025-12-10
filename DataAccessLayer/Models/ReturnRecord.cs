@@ -5,33 +5,21 @@ namespace DataAccessLayer.Models;
 
 public partial class ReturnRecord
 {
-    public int Id { get; set; }
+    public Guid ReturnId { get; set; }
 
-    public int ItemId { get; set; }
+    public Guid ItemId { get; set; }
 
-    public int StaffId { get; set; }
+    public Guid FoundUserId { get; set; }
 
-    public string? Name { get; set; }
+    public Guid? ReceiverUserId { get; set; }
 
-    public string? ImgCccdFront { get; set; }
+    public DateTime ReturnDate { get; set; }
 
-    public string? ImgCccdBack { get; set; }
+    public string Status { get; set; } = null!;
 
-    public string? EvidenceImg { get; set; }
-
-    public string? ConfirmImg { get; set; }
-
-    public string? VerifyNotes { get; set; }
-
-    public int? Status { get; set; }
-
-    public DateTime? DateCreated { get; set; }
-
-    public DateTime? DateUpdate { get; set; }
-
-    public string? Mssv { get; set; }
+    public virtual User FoundUser { get; set; } = null!;
 
     public virtual Item Item { get; set; } = null!;
 
-    public virtual User Staff { get; set; } = null!;
+    public virtual User? ReceiverUser { get; set; }
 }
