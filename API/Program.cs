@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using API.Middleware;
 using BusinessObjectLayer.IService;
 using BusinessObjectLayer.Services;
+using Repository;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -31,7 +32,7 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "JWT Authorization header using the Bearer scheme. \r\n\r\n Enter 'Bearer' [space] and then your token in the text input below.\r\n\r\nExample: \"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\""
+        Description = "JWT Authorization header using the Bearer scheme. \r\n\r\n Enter 'Bearer' [space] and then your token in the text input below.\r\n\r\nExample:  \"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\""
     });
 
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -101,8 +102,18 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// Register Services from BusinessObjectLayer
+// ========== Register Repositories ==========
+builder.Services.AddScoped<ItemRepository>();
+// Thêm các repository khác ở đây nếu cần
+// builder.Services.AddScoped<CategoryRepository>();
+// builder.Services. AddScoped<UserRepository>();
+
+// ========== Register Services from BusinessObjectLayer ==========
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IItemService, ItemService>();  // ✅ Thêm dòng này
+// Thêm các service khác ở đây nếu cần
+// builder.Services.AddScoped<ICategoryService, CategoryService>();
+// builder.Services.AddScoped<IUserService, UserService>();
 
 // Configure CORS if needed
 builder.Services.AddCors(options =>
