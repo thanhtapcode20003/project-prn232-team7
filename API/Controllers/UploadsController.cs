@@ -1,6 +1,7 @@
 using BusinessObjectLayer.DTOs.Upload;
 using BusinessObjectLayer.IService;
 using Microsoft.AspNetCore.Mvc;
+using API.DTOs;
 
 namespace API.Controllers
 {
@@ -17,18 +18,25 @@ namespace API.Controllers
             _logger = logger;
         }
 
-        /// <summary>
-        /// Get all uploads
-        /// </summary>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<List<UploadDto>>> GetAllUploads()
+        public async Task<ActionResult<BusinessObjectLayer.IService.PagedResult<UploadDto>>> GetAllUploads(
+            [FromQuery] string? searchTerm = null,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
         {
             try
             {
-                var uploads = await _uploadService.GetAllUploadsAsync();
-                return Ok(uploads);
+                var filter = new UploadFilterDto
+                {
+                    SearchTerm = searchTerm,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize
+                };
+
+                var result = await _uploadService.SearchUploadsAsync(filter);
+                return Ok(result);
             }
             catch (Exception ex)
             {
@@ -37,9 +45,6 @@ namespace API.Controllers
             }
         }
 
-        /// <summary>
-        /// Get upload by ID
-        /// </summary>
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -60,9 +65,7 @@ namespace API.Controllers
             }
         }
 
-        /// <summary>
-        /// Get uploads by Item ID
-        /// </summary>
+
         [HttpGet("item/{itemId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -80,26 +83,26 @@ namespace API.Controllers
             }
         }
 
-        /// <summary>
-        /// Upload a file for an item
-        /// </summary>
+
         [HttpPost("upload")]
+        [Consumes("multipart/form-data")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<UploadDto>> UploadFile(
-            [FromForm] Guid itemId,
-            [FromForm] IFormFile file,
-            [FromForm] string status = "Pending",
-            [FromForm] string? statusAccept = null)
+        public async Task<ActionResult<UploadDto>> UploadFile([FromForm] FileUploadDto fileUploadDto)
         {
             try
             {
-                if (file == null || file.Length == 0)
+                if (fileUploadDto.File == null || fileUploadDto.File.Length == 0)
                 {
                     return BadRequest(new { message = "File is required" });
                 }
 
-                var upload = await _uploadService.UploadFileAsync(itemId, file, status, statusAccept);
+                var upload = await _uploadService.UploadFileAsync(
+                    fileUploadDto.ItemId, 
+                    fileUploadDto.File, 
+                    fileUploadDto.Status, 
+                    fileUploadDto.StatusAccept);
+                    
                 return CreatedAtAction(nameof(GetUploadById), new { id = upload.UploadId }, upload);
             }
             catch (ArgumentException ex)
@@ -119,9 +122,7 @@ namespace API.Controllers
             }
         }
 
-        /// <summary>
-        /// Update upload information
-        /// </summary>
+
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -146,9 +147,6 @@ namespace API.Controllers
             }
         }
 
-        /// <summary>
-        /// Delete upload
-        /// </summary>
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
