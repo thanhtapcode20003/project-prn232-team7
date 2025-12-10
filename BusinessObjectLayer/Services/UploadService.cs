@@ -4,6 +4,7 @@ using DataAccessLayer.Models;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Repository;
+using PagedResult = BusinessObjectLayer.IService.PagedResult<BusinessObjectLayer.DTOs.Upload.UploadDto>;
 
 namespace BusinessObjectLayer.Services
 {
@@ -25,8 +26,39 @@ namespace BusinessObjectLayer.Services
 
         public async Task<List<UploadDto>> GetAllUploadsAsync()
         {
-            var uploads = await _uploadRepository.GetAllAsync();
+            var uploads = await _uploadRepository.GetAllWithItemAsync();
             return uploads.Select(MapToDto).ToList();
+        }
+
+        public async Task<PagedResult<UploadDto>> SearchUploadsAsync(UploadFilterDto filter)
+        {
+            var uploads = await _uploadRepository.SearchUploadsAsync(
+                status: filter.Status,
+                statusAccept: filter.StatusAccept,
+                itemId: filter.ItemId,
+                searchTerm: filter.SearchTerm,
+                fromDate: filter.FromDate,
+                toDate: filter.ToDate,
+                pageNumber: filter.PageNumber,
+                pageSize: filter.PageSize
+            );
+
+            var totalCount = await _uploadRepository.CountUploadsAsync(
+                status: filter.Status,
+                statusAccept: filter.StatusAccept,
+                itemId: filter.ItemId,
+                searchTerm: filter.SearchTerm,
+                fromDate: filter.FromDate,
+                toDate: filter.ToDate
+            );
+
+            return new PagedResult
+            {
+                Items = uploads.Select(MapToDto).ToList(),
+                TotalCount = totalCount,
+                PageNumber = filter.PageNumber,
+                PageSize = filter.PageSize
+            };
         }
 
         public async Task<UploadDto?> GetUploadByIdAsync(Guid uploadId)

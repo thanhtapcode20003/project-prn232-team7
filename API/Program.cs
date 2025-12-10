@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +23,13 @@ builder.Services.AddSwaggerGen(options =>
         Title = "Lost and Found System API",
         Version = "v1",
         Description = "API for Lost and Found System with JWT Authentication"
+    });
+
+    // Map IFormFile to file type for Swagger
+    options.MapType<IFormFile>(() => new OpenApiSchema
+    {
+        Type = "string",
+        Format = "binary"
     });
 
     // Add JWT Authentication to Swagger
@@ -49,6 +57,9 @@ builder.Services.AddSwaggerGen(options =>
             Array.Empty<string>()
         }
     });
+
+    // Add file upload operation filter
+    options.OperationFilter<API.Swagger.FileUploadOperationFilter>();
 });
 
 // Configure Database
@@ -135,14 +146,17 @@ var app = builder.Build();
 // Global Exception Handler - Must be first
 app.UseGlobalExceptionHandler();
 
-if (app.Environment.IsDevelopment())
+// Enable Swagger always (or use if (app.Environment.IsDevelopment()) for production safety)
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Lost and Found System API v1");
-    });
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Lost and Found System API v1");
+    c.RoutePrefix = "swagger"; // Swagger UI will be available at /swagger
+    c.DisplayRequestDuration();
+    c.EnableDeepLinking();
+    c.EnableFilter();
+    c.EnableValidator();
+});
 
 app.UseHttpsRedirection();
 

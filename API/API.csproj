@@ -7,16 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="DTOs\**" />
     <Compile Remove="Global\**" />
     <Compile Remove="Services\**" />
-    <Content Remove="DTOs\**" />
     <Content Remove="Global\**" />
     <Content Remove="Services\**" />
-    <EmbeddedResource Remove="DTOs\**" />
     <EmbeddedResource Remove="Global\**" />
     <EmbeddedResource Remove="Services\**" />
-    <None Remove="DTOs\**" />
     <None Remove="Global\**" />
     <None Remove="Services\**" />
   </ItemGroup>
