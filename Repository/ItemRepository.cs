@@ -100,5 +100,92 @@ namespace Repository
                 .Where(i => i.LostDate >= startDate && i.LostDate <= endDate)
                 .ToListAsync();
         }
+        public async Task<List<Item>> SearchItemsAsync(
+            string? status = null,
+            Guid? userId = null,
+            Guid? categoryId = null,
+            Guid? locationId = null,
+            string? searchTerm = null,
+            DateOnly? fromDate = null,
+            DateOnly? toDate = null,
+            int pageNumber = 1,
+            int pageSize = 10)
+        {
+            var query = _context.Items
+                .Include(i => i.Category)
+                .Include(i => i.Location)
+                .Include(i => i.User)
+                .AsQueryable();
+
+            // Apply filters
+            if (!string.IsNullOrEmpty(status))
+                query = query.Where(i => i.Status == status);
+
+            if (userId.HasValue)
+                query = query.Where(i => i.UserId == userId.Value);
+
+            if (categoryId.HasValue)
+                query = query.Where(i => i.CategoryId == categoryId.Value);
+
+            if (locationId.HasValue)
+                query = query.Where(i => i.LocationId == locationId.Value);
+
+            if (!string.IsNullOrEmpty(searchTerm))
+                query = query.Where(i =>
+                    i.ItemName.Contains(searchTerm) ||
+                    (i.Description != null && i.Description.Contains(searchTerm)));
+
+            if (fromDate.HasValue)
+                query = query.Where(i => i.LostDate >= fromDate.Value);
+
+            if (toDate.HasValue)
+                query = query.Where(i => i.LostDate <= toDate.Value);
+
+            // Pagination
+            query = query
+                .OrderByDescending(i => i.LostDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize);
+
+            return await query.ToListAsync();
+        }
+
+        // ✅ Count total cho pagination
+        public async Task<int> CountItemsAsync(
+            string? status = null,
+            Guid? userId = null,
+            Guid? categoryId = null,
+            Guid? locationId = null,
+            string? searchTerm = null,
+            DateOnly? fromDate = null,
+            DateOnly? toDate = null)
+        {
+            var query = _context.Items.AsQueryable();
+
+            if (!string.IsNullOrEmpty(status))
+                query = query.Where(i => i.Status == status);
+
+            if (userId.HasValue)
+                query = query.Where(i => i.UserId == userId.Value);
+
+            if (categoryId.HasValue)
+                query = query.Where(i => i.CategoryId == categoryId.Value);
+
+            if (locationId.HasValue)
+                query = query.Where(i => i.LocationId == locationId.Value);
+
+            if (!string.IsNullOrEmpty(searchTerm))
+                query = query.Where(i =>
+                    i.ItemName.Contains(searchTerm) ||
+                    (i.Description != null && i.Description.Contains(searchTerm)));
+
+            if (fromDate.HasValue)
+                query = query.Where(i => i.LostDate >= fromDate.Value);
+
+            if (toDate.HasValue)
+                query = query.Where(i => i.LostDate <= toDate.Value);
+
+            return await query.CountAsync();
+        }
     }
 }

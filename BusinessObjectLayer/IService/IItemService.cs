@@ -14,11 +14,20 @@ namespace BusinessObjectLayer.IService
         Task<ItemDto> CreateItemAsync(CreateItemDto createItemDto);
         Task<ItemDto?> UpdateItemAsync(Guid id, UpdateItemDto updateItemDto);
         Task<bool> DeleteItemAsync(Guid id);
-        Task<List<ItemDto>> GetItemsByStatusAsync(string status);
-        Task<List<ItemDto>> GetItemsByUserIdAsync(Guid userId);
-        Task<List<ItemDto>> GetItemsByCategoryIdAsync(Guid categoryId);
-        Task<List<ItemDto>> GetItemsByLocationIdAsync(Guid locationId);
-        Task<List<ItemDto>> SearchItemsAsync(string searchTerm);
-        Task<List<ItemDto>> GetItemsByDateRangeAsync(DateOnly startDate, DateOnly endDate);
+
+        // ✅ Method mới
+        Task<PagedResult<ItemDto>> SearchItemsAsync(ItemFilterDto filter);
+    }
+
+    // ✅ Response cho pagination
+    public class PagedResult<T>
+    {
+        public List<T> Items { get; set; } = new();
+        public int TotalCount { get; set; }
+        public int PageNumber { get; set; }
+        public int PageSize { get; set; }
+        public int TotalPages => (int)Math.Ceiling(TotalCount / (double)PageSize);
+        public bool HasPrevious => PageNumber > 1;
+        public bool HasNext => PageNumber < TotalPages;
     }
 }
