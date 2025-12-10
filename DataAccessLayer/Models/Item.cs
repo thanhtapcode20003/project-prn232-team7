@@ -5,37 +5,31 @@ namespace DataAccessLayer.Models;
 
 public partial class Item
 {
-    public int Id { get; set; }
+    public Guid ItemId { get; set; }
 
-    public string? Name { get; set; }
+    public string ItemName { get; set; } = null!;
 
     public string? Description { get; set; }
 
-    public string? Img { get; set; }
+    public DateOnly? LostDate { get; set; }
 
-    public int CategoryId { get; set; }
+    public TimeOnly? LostTime { get; set; }
 
-    public int Status { get; set; }
+    public Guid CategoryId { get; set; }
 
-    public DateTime? Date { get; set; }
+    public Guid UserId { get; set; }
 
-    public string? FoundLocation { get; set; }
+    public Guid LocationId { get; set; }
 
-    public int? CurrentLocationId { get; set; }
-
-    public string? Content { get; set; }
-
-    public int? UserId { get; set; }
-
-    public DateTime? FoundDate { get; set; }
+    public string Status { get; set; } = null!;
 
     public virtual Category Category { get; set; } = null!;
 
-    public virtual ServiceLocation? CurrentLocation { get; set; }
+    public virtual ServiceLocation Location { get; set; } = null!;
 
     public virtual ICollection<ReturnRecord> ReturnRecords { get; set; } = new List<ReturnRecord>();
 
     public virtual ICollection<Upload> Uploads { get; set; } = new List<Upload>();
 
-    public virtual User? User { get; set; }
+    public virtual User User { get; set; } = null!;
 }

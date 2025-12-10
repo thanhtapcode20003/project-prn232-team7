@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
+using BusinessObjectLayer.Enum;
 
 namespace BusinessObjectLayer.Services;
 
@@ -48,7 +49,7 @@ public class AuthService : IAuthService
         }
 
         // Check user status
-        if (user.Status == 0)
+        if (!user.Status.Equals(StatusEnum.ACTIVE.ToString()))
         {
             throw new UnauthorizedException("Account is inactive");
         }
@@ -60,12 +61,12 @@ public class AuthService : IAuthService
 
         return new AuthResponseDto
         {
-            UserId = user.Id,
+            UserId = user.UserId,
             Username = user.Username!,
             Name = user.Name,
-            Gmail = user.Gmail,
+            Gmail = user.Email,
             Token = token,
-            RoleName = user.Role.Name,
+            RoleName = user.Role.RoleName,
             ExpiresAt = expiresAt
         };
     }
@@ -83,7 +84,7 @@ public class AuthService : IAuthService
 
         // Check if email already exists
         var existingEmail = await _context.Users
-            .FirstOrDefaultAsync(u => u.Gmail == request.Gmail);
+            .FirstOrDefaultAsync(u => u.Email == request.Gmail);
 
         if (existingEmail != null)
         {
@@ -91,7 +92,7 @@ public class AuthService : IAuthService
         }
 
         // Get default role (User role, assuming RoleId = 2)
-        var userRole = await _context.Roles.FindAsync(2);
+        var userRole = await _context.Roles.FindAsync("User");
         if (userRole == null)
         {
             throw new ApiException(500, "HB50001", "Default user role not found");
@@ -100,14 +101,14 @@ public class AuthService : IAuthService
         // Create new user
         var newUser = new User
         {
-            Name = request.Name,
+            FullName = request.Name,
             Username = request.Username,
             Password = HashPassword(request.Password), // Hash password
-            Gmail = request.Gmail,
-            Phone = request.Phone,
+            Email = request.Gmail,
+            PhoneNumber = request.Phone,
             Address = request.Address,
-            RoleId = userRole.Id,
-            Status = 1 // Active by default
+          //  RoleId = userRole.Id,
+            Status = StatusEnum.ACTIVE.ToString() // Active by default
         };
 
         _context.Users.Add(newUser);
@@ -123,21 +124,21 @@ public class AuthService : IAuthService
 
         return new AuthResponseDto
         {
-            UserId = newUser.Id,
+            
             Username = newUser.Username!,
             Name = newUser.Name,
-            Gmail = newUser.Gmail,
+            Gmail = newUser.Email,
             Token = token,
-            RoleName = newUser.Role.Name,
+            RoleName = newUser.Role.RoleName,
             ExpiresAt = expiresAt
         };
     }
 
-    public async Task<UserDto?> GetCurrentUserAsync(int userId)
+    public async Task<UserDto?> GetCurrentUserAsync(Guid userId)
     {
         var user = await _context.Users
             .Include(u => u.Role)
-            .FirstOrDefaultAsync(u => u.Id == userId);
+            .FirstOrDefaultAsync(u => u.UserId == userId);
 
         if (user == null)
         {
@@ -146,13 +147,13 @@ public class AuthService : IAuthService
 
         return new UserDto
         {
-            Id = user.Id,
+            Id = user.UserId,
             Name = user.Name,
-            Phone = user.Phone,
-            Gmail = user.Gmail,
+            Phone = user.PhoneNumber,
+            Gmail = user.Email,
             Address = user.Address,
             Username = user.Username,
-            RoleName = user.Role.Name,
+            RoleName = user.Role.RoleName,
             Status = user.Status
         };
     }
@@ -165,10 +166,10 @@ public class AuthService : IAuthService
 
         var claims = new[]
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
             new Claim(JwtRegisteredClaimNames.UniqueName, user.Username ?? string.Empty),
-            new Claim(JwtRegisteredClaimNames.Email, user.Gmail ?? string.Empty),
-            new Claim(ClaimTypes.Role, user.Role.Name),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
+            new Claim(ClaimTypes.Role, user.Role.RoleName),
             new Claim(ClaimTypes.Name, user.Name),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };

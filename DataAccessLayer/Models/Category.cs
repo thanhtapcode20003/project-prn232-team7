@@ -5,17 +5,11 @@ namespace DataAccessLayer.Models;
 
 public partial class Category
 {
-    public int Id { get; set; }
+    public Guid CategoryId { get; set; }
 
-    public string? Name { get; set; }
+    public string CategoryName { get; set; } = null!;
 
-    public string? Description { get; set; }
-
-    public int Status { get; set; }
-
-    public DateTime? Datecreate { get; set; }
-
-    public DateTime? Dateupdate { get; set; }
+    public string Status { get; set; } = null!;
 
     public virtual ICollection<Item> Items { get; set; } = new List<Item>();
 }
