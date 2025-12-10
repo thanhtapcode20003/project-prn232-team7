@@ -2,12 +2,6 @@
 using BusinessObjectLayer.IService;
 using DataAccessLayer.Models;
 using Repository;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 
 namespace BusinessObjectLayer.Services
 {
@@ -53,8 +47,6 @@ namespace BusinessObjectLayer.Services
             };
 
             await _itemRepository.CreateAsync(item);
-
-            // Get the created item with details
             var createdItem = await _itemRepository.GetByIdWithDetailsAsync(item.ItemId);
             return MapToDto(createdItem!);
         }
@@ -75,8 +67,6 @@ namespace BusinessObjectLayer.Services
             existingItem.Status = updateItemDto.Status;
 
             await _itemRepository.UpdateAsync(existingItem);
-
-            // Get the updated item with details
             var updatedItem = await _itemRepository.GetByIdWithDetailsAsync(id);
             return MapToDto(updatedItem!);
         }
@@ -91,43 +81,41 @@ namespace BusinessObjectLayer.Services
             return true;
         }
 
-        public async Task<List<ItemDto>> GetItemsByStatusAsync(string status)
+        // ✅ Unified Search Method with Pagination
+        public async Task<PagedResult<ItemDto>> SearchItemsAsync(ItemFilterDto filter)
         {
-            var items = await _itemRepository.GetByStatusAsync(status);
-            return items.Select(MapToDto).ToList();
+            var items = await _itemRepository.SearchItemsAsync(
+                status: filter.Status,
+                userId: filter.UserId,
+                categoryId: filter.CategoryId,
+                locationId: filter.LocationId,
+                searchTerm: filter.SearchTerm,
+                fromDate: filter.FromDate,
+                toDate: filter.ToDate,
+                pageNumber: filter.PageNumber,
+                pageSize: filter.PageSize
+            );
+
+            var totalCount = await _itemRepository.CountItemsAsync(
+                status: filter.Status,
+                userId: filter.UserId,
+                categoryId: filter.CategoryId,
+                locationId: filter.LocationId,
+                searchTerm: filter.SearchTerm,
+                fromDate: filter.FromDate,
+                toDate: filter.ToDate
+            );
+
+            return new PagedResult<ItemDto>
+            {
+                Items = items.Select(MapToDto).ToList(),
+                TotalCount = totalCount,
+                PageNumber = filter.PageNumber,
+                PageSize = filter.PageSize
+            };
         }
 
-        public async Task<List<ItemDto>> GetItemsByUserIdAsync(Guid userId)
-        {
-            var items = await _itemRepository.GetByUserIdAsync(userId);
-            return items.Select(MapToDto).ToList();
-        }
-
-        public async Task<List<ItemDto>> GetItemsByCategoryIdAsync(Guid categoryId)
-        {
-            var items = await _itemRepository.GetByCategoryIdAsync(categoryId);
-            return items.Select(MapToDto).ToList();
-        }
-
-        public async Task<List<ItemDto>> GetItemsByLocationIdAsync(Guid locationId)
-        {
-            var items = await _itemRepository.GetByLocationIdAsync(locationId);
-            return items.Select(MapToDto).ToList();
-        }
-
-        public async Task<List<ItemDto>> SearchItemsAsync(string searchTerm)
-        {
-            var items = await _itemRepository.SearchByNameAsync(searchTerm);
-            return items.Select(MapToDto).ToList();
-        }
-
-        public async Task<List<ItemDto>> GetItemsByDateRangeAsync(DateOnly startDate, DateOnly endDate)
-        {
-            var items = await _itemRepository.GetByDateRangeAsync(startDate, endDate);
-            return items.Select(MapToDto).ToList();
-        }
-
-        // Helper method to map Entity to DTO
+        // ✅ Single MapToDto method
         private ItemDto MapToDto(Item item)
         {
             return new ItemDto
