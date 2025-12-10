@@ -51,10 +51,13 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 // Configure Database
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+Console.WriteLine($"🔗 Connection String: {connectionString}");
+
 builder.Services.AddDbContext<LostAndFoundSystemDbContext>(options =>
 {
     options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
+        connectionString,
         sqlOptions => sqlOptions.EnableRetryOnFailure(
             maxRetryCount: 3,
             maxRetryDelay: TimeSpan.FromSeconds(30),
@@ -62,8 +65,12 @@ builder.Services.AddDbContext<LostAndFoundSystemDbContext>(options =>
         )
     );
 
-    // Optional: Disable tracking globally nếu cần
-    options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+    // Enable sensitive data logging in Development
+    if (builder.Environment.IsDevelopment())
+    {
+        options.EnableSensitiveDataLogging();
+        options.EnableDetailedErrors();
+    }
 });
 
 // Configure JWT Authentication
@@ -103,6 +110,7 @@ builder.Services.AddAuthorization();
 
 // Register Services from BusinessObjectLayer
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IItemService, ItemService>();
 
 // Configure CORS if needed
 builder.Services.AddCors(options =>
@@ -116,6 +124,43 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// Test database connection khi khởi động
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<LostAndFoundSystemDbContext>();
+        var canConnect = await context.Database.CanConnectAsync();
+        
+        if (canConnect)
+        {
+            Console.WriteLine("✅ Kết nối database thành công!");
+            Console.WriteLine($"📊 Database: {context.Database.GetDbConnection().Database}");
+            Console.WriteLine($"🖥️  Server: {context.Database.GetDbConnection().DataSource}");
+        }
+        else
+        {
+            Console.WriteLine("❌ Không thể kết nối đến database!");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("❌ LỖI KẾT NỐI DATABASE:");
+        Console.WriteLine($"   Message: {ex.Message}");
+        if (ex.InnerException != null)
+        {
+            Console.WriteLine($"   Inner Exception: {ex.InnerException.Message}");
+        }
+        Console.WriteLine("\n💡 HƯỚNG DẪN KHẮC PHỤC:");
+        Console.WriteLine("   1. Kiểm tra SQL Server đã chạy chưa");
+        Console.WriteLine("   2. Kiểm tra tên Server/Instance trong connection string");
+        Console.WriteLine("   3. Kiểm tra database 'LostAndFoundSystemDB' đã tồn tại chưa");
+        Console.WriteLine("   4. Xem file SETUP_GUIDE_VIETNAMESE.md để biết thêm chi tiết");
+        Console.WriteLine("   5. Xem file DATABASE_CONNECTION_GUIDE.md để troubleshooting\n");
+    }
+}
 
 // Configure the HTTP request pipeline.
 

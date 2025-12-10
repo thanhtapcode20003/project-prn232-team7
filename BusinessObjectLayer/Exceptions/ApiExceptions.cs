@@ -65,20 +65,19 @@ public class ApiError
 public class ApiResponse<T>
 {
     public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
     public T? Data { get; set; }
-    public string? Message { get; set; }
-    public DateTime Timestamp { get; set; }
 
-    public ApiResponse(T data, string? message = null)
+    public ApiResponse() { }
+
+    public ApiResponse(T data)
     {
         Success = true;
         Data = data;
-        Message = message;
-        Timestamp = DateTime.UtcNow;
     }
 
-    public static ApiResponse<T> Ok(T data, string? message = null)
-        => new(data, message);
+    public static ApiResponse<T> Ok(T data, string message = "Success")
+        => new() { Success = true, Message = message, Data = data };
 }
 
 /// <summary>
