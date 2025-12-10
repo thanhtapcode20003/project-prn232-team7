@@ -104,6 +104,7 @@ builder.Services.AddAuthorization();
 
 // ========== Register Repositories ==========
 builder.Services.AddScoped<ItemRepository>();
+builder.Services.AddScoped<UploadRepository>();
 // Thêm các repository khác ở đây nếu cần
 // builder.Services.AddScoped<CategoryRepository>();
 // builder.Services. AddScoped<UserRepository>();
@@ -111,6 +112,7 @@ builder.Services.AddScoped<ItemRepository>();
 // ========== Register Services from BusinessObjectLayer ==========
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IItemService, ItemService>();  // ✅ Thêm dòng này
+builder.Services.AddScoped<IUploadService, UploadService>();
 // Thêm các service khác ở đây nếu cần
 // builder.Services.AddScoped<ICategoryService, CategoryService>();
 // builder.Services.AddScoped<IUserService, UserService>();
@@ -143,6 +145,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Enable static files for serving uploaded files
+app.UseStaticFiles();
 
 // Enable CORS
 app.UseCors("AllowAll");
