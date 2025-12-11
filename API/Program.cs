@@ -116,6 +116,7 @@ builder.Services.AddAuthorization();
 // ========== Register Repositories ==========
 builder.Services.AddScoped<ItemRepository>();
 builder.Services.AddScoped<UploadRepository>();
+builder.Services.AddScoped<ReturnRecordRepository>();
 // Thêm các repository khác ở đây nếu cần
 // builder.Services.AddScoped<CategoryRepository>();
 // builder.Services. AddScoped<UserRepository>();
@@ -124,6 +125,7 @@ builder.Services.AddScoped<UploadRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IItemService, ItemService>();  // ✅ Thêm dòng này
 builder.Services.AddScoped<IUploadService, UploadService>();
+builder.Services.AddScoped<IReturnRecordService, ReturnRecordService>();
 // Thêm các service khác ở đây nếu cần
 // builder.Services.AddScoped<ICategoryService, CategoryService>();
 // builder.Services.AddScoped<IUserService, UserService>();
