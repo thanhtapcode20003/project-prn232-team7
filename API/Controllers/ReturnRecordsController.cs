@@ -17,19 +17,6 @@ namespace API.Controllers
             _logger = logger;
         }
 
-        /// <summary>
-        /// Get all return records with query, paging, search, and filters
-        /// </summary>
-        /// <param name="status">Filter by status</param>
-        /// <param name="itemId">Filter by item ID</param>
-        /// <param name="foundUserId">Filter by found user ID</param>
-        /// <param name="receiverUserId">Filter by receiver user ID</param>
-        /// <param name="fromDate">Filter from date (YYYY-MM-DD)</param>
-        /// <param name="toDate">Filter to date (YYYY-MM-DD)</param>
-        /// <param name="searchTerm">Search in item name, user names, and status</param>
-        /// <param name="pageNumber">Page number (default: 1)</param>
-        /// <param name="pageSize">Items per page (default: 10)</param>
-        /// <returns>Paginated list of filtered return records</returns>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -69,9 +56,6 @@ namespace API.Controllers
             }
         }
 
-        /// <summary>
-        /// Get return record by ID
-        /// </summary>
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -92,9 +76,6 @@ namespace API.Controllers
             }
         }
 
-        /// <summary>
-        /// Create new return record
-        /// </summary>
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -115,9 +96,6 @@ namespace API.Controllers
             }
         }
 
-        /// <summary>
-        /// Update existing return record
-        /// </summary>
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -141,9 +119,6 @@ namespace API.Controllers
             }
         }
 
-        /// <summary>
-        /// Delete return record
-        /// </summary>
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -165,4 +140,5 @@ namespace API.Controllers
         }
     }
 }
+
 
