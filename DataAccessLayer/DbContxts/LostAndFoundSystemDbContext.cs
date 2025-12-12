@@ -32,15 +32,24 @@ public partial class LostAndFoundSystemDbContext : DbContext
     public virtual DbSet<Upload> Uploads { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
+    public static string GetConnectionString(string connectionStringName)
+    {
+        var config = new ConfigurationBuilder()
+            .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+            .AddJsonFile("appsettings.json")
+            .Build();
 
-    
+        string connectionString = config.GetConnectionString(connectionStringName);
+        return connectionString;
+    }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    { }
+        => optionsBuilder.UseSqlServer(GetConnectionString("DefaultConnection")).UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Campus>(entity =>
         {
-            entity.HasKey(e => e.CampusId).HasName("PK__campus__01989FD158623E39");
+            entity.HasKey(e => e.CampusId).HasName("PK__campus__01989FD1F49F86FD");
 
             entity.ToTable("campus");
 
@@ -58,7 +67,7 @@ public partial class LostAndFoundSystemDbContext : DbContext
 
         modelBuilder.Entity<Category>(entity =>
         {
-            entity.HasKey(e => e.CategoryId).HasName("PK__categori__D54EE9B4F9247F32");
+            entity.HasKey(e => e.CategoryId).HasName("PK__categori__D54EE9B4A0178DB3");
 
             entity.ToTable("categories");
 
@@ -76,7 +85,7 @@ public partial class LostAndFoundSystemDbContext : DbContext
 
         modelBuilder.Entity<Item>(entity =>
         {
-            entity.HasKey(e => e.ItemId).HasName("PK__item__52020FDD25EF57E6");
+            entity.HasKey(e => e.ItemId).HasName("PK__item__52020FDD013DE0F0");
 
             entity.ToTable("item");
 
@@ -115,7 +124,7 @@ public partial class LostAndFoundSystemDbContext : DbContext
 
         modelBuilder.Entity<ReturnRecord>(entity =>
         {
-            entity.HasKey(e => e.ReturnId).HasName("PK__return_r__35C23473E807205A");
+            entity.HasKey(e => e.ReturnId).HasName("PK__return_r__35C2347327B4B591");
 
             entity.ToTable("return_record");
 
@@ -151,7 +160,7 @@ public partial class LostAndFoundSystemDbContext : DbContext
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.RoleId).HasName("PK__roles__760965CC26B0BA37");
+            entity.HasKey(e => e.RoleId).HasName("PK__roles__760965CC7E7DD6EA");
 
             entity.ToTable("roles");
 
@@ -169,7 +178,7 @@ public partial class LostAndFoundSystemDbContext : DbContext
 
         modelBuilder.Entity<ServiceLocation>(entity =>
         {
-            entity.HasKey(e => e.ServiceLocationId).HasName("PK__service___6A3650E4230082D7");
+            entity.HasKey(e => e.ServiceLocationId).HasName("PK__service___6A3650E4FE77009F");
 
             entity.ToTable("service_location");
 
@@ -193,7 +202,7 @@ public partial class LostAndFoundSystemDbContext : DbContext
 
         modelBuilder.Entity<Upload>(entity =>
         {
-            entity.HasKey(e => e.UploadId).HasName("PK__upload__A13DEF58F2CBA1C0");
+            entity.HasKey(e => e.UploadId).HasName("PK__upload__A13DEF58A4026C53");
 
             entity.ToTable("upload");
 
@@ -224,13 +233,13 @@ public partial class LostAndFoundSystemDbContext : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PK__users__B9BE370F3877FC21");
+            entity.HasKey(e => e.UserId).HasName("PK__users__B9BE370F1022A998");
 
             entity.ToTable("users");
 
-            entity.HasIndex(e => e.Email, "UQ__users__AB6E6164771FBB5E").IsUnique();
+            entity.HasIndex(e => e.Email, "UQ__users__AB6E6164FFFB265B").IsUnique();
 
-            entity.HasIndex(e => e.Username, "UQ__users__F3DBC57274D325C9").IsUnique();
+            entity.HasIndex(e => e.Username, "UQ__users__F3DBC572CE4E5782").IsUnique();
 
             entity.Property(e => e.UserId)
                 .HasDefaultValueSql("(newid())")
