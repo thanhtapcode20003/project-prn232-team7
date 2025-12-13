@@ -7,6 +7,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Global\**" />
+    <Compile Remove="Services\**" />
+    <Content Remove="Global\**" />
+    <Content Remove="Services\**" />
+    <EmbeddedResource Remove="Global\**" />
+    <EmbeddedResource Remove="Services\**" />
+    <None Remove="Global\**" />
+    <None Remove="Services\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.11" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.1">
@@ -18,12 +29,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BusinessObjectLayer\BusinessObjectLayer.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="DTOs\Auth\" />
-    <Folder Include="Global\" />
-    <Folder Include="Services\" />
   </ItemGroup>
 
 </Project>

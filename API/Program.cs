@@ -3,10 +3,12 @@ using Microsoft.EntityFrameworkCore;
 using API.Middleware;
 using BusinessObjectLayer.IService;
 using BusinessObjectLayer.Services;
+using Repository;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +25,13 @@ builder.Services.AddSwaggerGen(options =>
         Description = "API for Lost and Found System with JWT Authentication"
     });
 
+    // Map IFormFile to file type for Swagger
+    options.MapType<IFormFile>(() => new OpenApiSchema
+    {
+        Type = "string",
+        Format = "binary"
+    });
+
     // Add JWT Authentication to Swagger
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -31,7 +40,7 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "JWT Authorization header using the Bearer scheme. \r\n\r\n Enter 'Bearer' [space] and then your token in the text input below.\r\n\r\nExample: \"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\""
+        Description = "JWT Authorization header using the Bearer scheme. \r\n\r\n Enter 'Bearer' [space] and then your token in the text input below.\r\n\r\nExample:  \"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\""
     });
 
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -48,6 +57,9 @@ builder.Services.AddSwaggerGen(options =>
             Array.Empty<string>()
         }
     });
+
+    // Add file upload operation filter
+    options.OperationFilter<API.Swagger.FileUploadOperationFilter>();
 });
 
 // Configure Database
@@ -101,10 +113,17 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// Register Services from BusinessObjectLayer
+// ========== Register Services from BusinessObjectLayer ==========
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICampusService, CampusService>();
 builder.Services.AddScoped<IServiceLocationService, ServiceLocationService>();
+builder.Services.AddScoped<IItemService, ItemService>();  // ✅ Thêm dòng này
+builder.Services.AddScoped<IUploadService, UploadService>();
+builder.Services.AddScoped<IReturnRecordService, ReturnRecordService>();
+// Thêm các service khác ở đây nếu cần
+// builder.Services.AddScoped<ICategoryService, CategoryService>();
+// builder.Services.AddScoped<IUserService, UserService>();
+
 
 // Configure CORS if needed
 builder.Services.AddCors(options =>
@@ -124,16 +143,22 @@ var app = builder.Build();
 // Global Exception Handler - Must be first
 app.UseGlobalExceptionHandler();
 
-if (app.Environment.IsDevelopment())
+// Enable Swagger always (or use if (app.Environment.IsDevelopment()) for production safety)
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Lost and Found System API v1");
-    });
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Lost and Found System API v1");
+    c.RoutePrefix = "swagger"; // Swagger UI will be available at /swagger
+    c.DisplayRequestDuration();
+    c.EnableDeepLinking();
+    c.EnableFilter();
+    c.EnableValidator();
+});
 
 app.UseHttpsRedirection();
+
+// Enable static files for serving uploaded files
+app.UseStaticFiles();
 
 // Enable CORS
 app.UseCors("AllowAll");
