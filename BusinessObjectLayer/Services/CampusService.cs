@@ -36,6 +36,7 @@ namespace BusinessObjectLayer.Services
                 var newCampus = new Campus
                 {
                     CampusName = campus.Name,
+                   
                     Status = StatusEnum.ACTIVE.ToString(),
                 };
                 _campusRepository.Create(newCampus);

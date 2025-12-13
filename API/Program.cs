@@ -104,6 +104,7 @@ builder.Services.AddAuthorization();
 // Register Services from BusinessObjectLayer
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICampusService, CampusService>();
+builder.Services.AddScoped<IServiceLocationService, ServiceLocationService>();
 
 // Configure CORS if needed
 builder.Services.AddCors(options =>

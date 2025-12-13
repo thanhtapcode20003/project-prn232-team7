@@ -2,6 +2,7 @@
 using BusinessObjectLayer.Exceptions;
 using BusinessObjectLayer.IService;
 using BusinessObjectLayer.Services;
+using DataAccessLayer.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -22,13 +23,13 @@ namespace API.Controllers
         public async Task<IActionResult> GetAllCampuses()
         {
             var campuses = await _campusService.GetAllCampuses();
-            return Ok(ApiResponse<List<DataAccessLayer.Models.Campus>>.Ok(campuses, "Get all campuses successfully"));
+            return Ok(ApiResponse<List<Campus>>.Ok(campuses, "Get all campuses successfully"));
         }
         [HttpGet("{campusId}")]
         public async Task<IActionResult> GetCampusById([FromRoute] Guid campusId)
         {
             var campus = await _campusService.GetCampusById(campusId);
-            return Ok(ApiResponse<DataAccessLayer.Models.Campus>.Ok(campus, "Get campus by id successfully"));
+            return Ok(ApiResponse<Campus>.Ok(campus, "Get campus by id successfully"));
         }
 
         [HttpPost("create")]
@@ -38,7 +39,7 @@ namespace API.Controllers
         public async Task<IActionResult> CreateCampus([FromBody] CampusRequest campus)
         {
             var newCampus = await _campusService.CreateCampus(campus);
-            return Ok(ApiResponse<DataAccessLayer.Models.Campus>.Ok(newCampus, "Campus created successfully"));
+            return Ok(ApiResponse<Campus>.Ok(newCampus, "Campus created successfully"));
         }
         [HttpPost("delete")]
         [Authorize]
@@ -56,7 +57,7 @@ namespace API.Controllers
         public async Task<IActionResult> UpdateCampus([FromRoute] Guid campusId, [FromBody] CampusRequest campus)
         {
             var updatedCampus = await _campusService.UpdateCampus(campusId, campus);
-            return Ok(ApiResponse<DataAccessLayer.Models.Campus>.Ok(updatedCampus, "Campus updated successfully"));
+            return Ok(ApiResponse<Campus>.Ok(updatedCampus, "Campus updated successfully"));
         }
 
     }
