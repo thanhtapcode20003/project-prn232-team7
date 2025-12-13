@@ -6,7 +6,7 @@ using API.DTOs;
 namespace API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/uploads")]
     public class UploadsController : ControllerBase
     {
         private readonly IUploadService _uploadService;
@@ -84,7 +84,7 @@ namespace API.Controllers
         }
 
 
-        [HttpPost("upload")]
+        [HttpPost]
         [Consumes("multipart/form-data")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

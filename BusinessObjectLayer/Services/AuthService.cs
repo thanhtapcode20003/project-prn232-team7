@@ -129,10 +129,8 @@ public class AuthService : IAuthService
 
         _logger.LogInformation("User created successfully: {UserId} - {Username}", newUser.UserId, newUser.Username);
 
-        // ✅ FIX: Gán Role cho newUser để tránh NullReferenceException khi tạo JWT token
         newUser.Role = userRole;
 
-        // Generate JWT token
         var token = GenerateJwtToken(newUser);
         var expiresAt = DateTime.UtcNow.AddHours(
             double.Parse(_configuration["Jwt:ExpiryHours"] ?? "24"));
