@@ -10,9 +10,10 @@ namespace BusinessObjectLayer.IService
 {
     public interface ICampusService
     {
-       Task<Campus> GetCampusById(int campusId);
+        Task<Campus> GetCampusById(Guid campusId);
         Task<List<Campus>> GetAllCampuses();
         Task<Campus> CreateCampus(CampusRequest campus);
-        Task<Campus> UpdateCampus(int campusId, CampusRequest campus);
+        Task<Campus> UpdateCampus(Guid campusId, CampusRequest campus);
+        Task<bool> DeleteCampus(Guid campusId);
     }
 }
