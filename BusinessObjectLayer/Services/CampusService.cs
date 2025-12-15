@@ -1,123 +1,124 @@
-﻿using BusinessObjectLayer.DTOs.Campus;
+﻿using BusinessObjectLayer.DTOs;
+using BusinessObjectLayer.DTOs.Campus;
 using BusinessObjectLayer.Enum;
+using BusinessObjectLayer.Exceptions;
 using BusinessObjectLayer.IService;
-using DataAccessLayer.DbContxts;
 using DataAccessLayer.Models;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Repository;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BusinessObjectLayer.Services
 {
     public class CampusService : ICampusService
     {
+        private readonly CampusRepository _campusRepository;
 
-        private readonly GenericRepository<Campus> _campusRepository;
         public CampusService()
         {
-            _campusRepository = new GenericRepository<Campus>();
+            _campusRepository = new CampusRepository();
         }
-
-        public CampusService(GenericRepository<Campus> campusRepository)
+        public CampusService(CampusRepository campusRepository)
         {
             _campusRepository = campusRepository;
-
         }
 
         public async Task<Campus> CreateCampus(CampusRequest campus)
         {
-            try
+            // (Optional) check trùng tên
+            if (await _campusRepository.NameExistsAsync(campus.Name))
             {
-                var newCampus = new Campus
-                {
-                    CampusName = campus.Name,
-                   
-                    Status = StatusEnum.ACTIVE.ToString(),
-                };
-                _campusRepository.Create(newCampus);
-                return newCampus;
+                throw new Exception("Campus name already exists");
             }
-            catch (Exception ex)
+
+            var newCampus = new Campus
             {
-                throw new Exception("An error occurred while creating the campus.", ex);
-            }
+                CampusName = campus.Name,
+                Status = StatusEnum.ACTIVE.ToString()
+            };
+
+            await _campusRepository.CreateAsync(newCampus);
+            return newCampus;
         }
 
         public async Task<bool> DeleteCampus(Guid campusId)
         {
-            try
+            var campus = await _campusRepository.GetByIdAsync(campusId);
+
+            if (campus == null || !IsActive(campus.Status))
             {
-                var campusToDelete = await _campusRepository.GetByIdAsync(campusId);
-                if(campusToDelete == null || !campusToDelete.Status.Equals(StatusEnum.ACTIVE.ToString()))
-                {
-                    throw new Exception("Campus not found.");
-                }
-                campusToDelete.Status = StatusEnum.INACTIVE.ToString();
-                _campusRepository.Update(campusToDelete);
-                return true;
+                throw new NotFoundException("Campus", campusId.ToString());
             }
-            catch (Exception ex)
-            {
-                throw new Exception("An error occurred while deleting the campus.", ex);
-            }
+
+            campus.Status = StatusEnum.INACTIVE.ToString();
+            await _campusRepository.UpdateAsync(campus);
+
+            return true;
         }
 
         public async Task<List<Campus>> GetAllCampuses()
         {
-            try
-            {
-                var campuses =await _campusRepository.FindAsync(c => c.Status.Equals(StatusEnum.ACTIVE.ToString()));
-                return campuses;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("An error occurred while retrieving campuses.", ex);
-            }
+            return await _campusRepository.FindAsync(
+                c => c.Status == StatusEnum.ACTIVE.ToString()
+            );
         }
 
         public async Task<Campus> GetCampusById(Guid campusId)
         {
-            try
+            var campus = await _campusRepository.GetByIdAsync(campusId);
+
+            if (campus == null || !IsActive(campus.Status))
             {
-                var campus = await _campusRepository.GetByIdAsync(campusId);
-                if(campus == null || !campus.Status.Equals(StatusEnum.ACTIVE.ToString()))
-                {
-                    throw new Exception("Campus not found.");
-                }
-                return campus;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("An error occurred while retrieving the campus.", ex);
+                throw new NotFoundException("Campus", campusId.ToString());
             }
 
+            return campus;
         }
-        
 
         public async Task<Campus> UpdateCampus(Guid campusId, CampusRequest campus)
         {
-            try
-            {
-                var campusToUpdate = await _campusRepository.GetByIdAsync(campusId);
-                if(campusToUpdate == null || !campusToUpdate.Status.Equals(StatusEnum.ACTIVE.ToString()))
-                {
-                    throw new Exception("Campus not found.");
-                }
-                campusToUpdate.CampusName = campus.Name;
-                
-                _campusRepository.Update(campusToUpdate);
+            var campusToUpdate = await _campusRepository.GetByIdAsync(campusId);
 
-                return campusToUpdate;
-            }
-            catch (Exception ex)
+            if (campusToUpdate == null || !IsActive(campusToUpdate.Status))
             {
-                throw new Exception("An error occurred while updating the campus.", ex);
+                throw new NotFoundException("Campus", campusId.ToString());
             }
+
+            campusToUpdate.CampusName = campus.Name;
+            await _campusRepository.UpdateAsync(campusToUpdate);
+
+            return campusToUpdate;
+        }
+        public async Task<PaginationResult<List<Campus>>> SearchCampuses(CampusFilterDto filterDto)
+        {
+            if (filterDto.Page <= 0) filterDto.Page = 1;
+            if (filterDto.PageSize <= 0) filterDto.PageSize = 10;
+
+            var (items, totalItems) =
+                await _campusRepository.SearchCampusesAsync(
+                    status: StatusEnum.ACTIVE.ToString(),
+                    nameContains: filterDto.Name,
+                    page: filterDto.Page,
+                    pageSize: filterDto.PageSize
+                );
+
+            return new PaginationResult<List<Campus>>
+            {
+                Items = items,
+                TotalItems = totalItems,
+                PageSize = filterDto.PageSize,
+                CurrentPage = filterDto.Page,
+                TotalPages = (int)Math.Ceiling(
+                    totalItems / (double)filterDto.PageSize)
+            };
+        }
+
+
+        private static bool IsActive(string? status)
+        {
+            return string.Equals(
+                status,
+                StatusEnum.ACTIVE.ToString(),
+                StringComparison.OrdinalIgnoreCase
+            );
         }
     }
 }

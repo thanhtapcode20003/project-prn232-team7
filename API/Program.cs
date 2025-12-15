@@ -118,11 +118,19 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICampusService, CampusService>();
 builder.Services.AddScoped<IServiceLocationService, ServiceLocationService>();
 builder.Services.AddScoped<IItemService, ItemService>();  // ✅ Thêm dòng này
-builder.Services.AddScoped<IUploadService, UploadService>();
+//builder.Services.AddScoped<IUploadService, UploadService>();
 builder.Services.AddScoped<IReturnRecordService, ReturnRecordService>();
 // Thêm các service khác ở đây nếu cần
 // builder.Services.AddScoped<ICategoryService, CategoryService>();
 // builder.Services.AddScoped<IUserService, UserService>();
+
+// Register generic repository and concrete repositories so DI can supply repositories with the DbContext
+builder.Services.AddScoped(typeof(Repository.GenericRepository<>));
+builder.Services.AddScoped<Repository.UploadRepository>();
+builder.Services.AddScoped<Repository.ItemRepository>();
+
+
+
 
 
 // Configure CORS if needed

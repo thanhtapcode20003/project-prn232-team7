@@ -1,27 +1,25 @@
-﻿using BusinessObjectLayer.DTOs.ServiceLocationRequest;
+﻿using BusinessObjectLayer.DTOs;
+using BusinessObjectLayer.DTOs.Campus;
+using BusinessObjectLayer.DTOs.ServiceLocation;
+using BusinessObjectLayer.DTOs.ServiceLocationRequest;
 using BusinessObjectLayer.Enum;
 using BusinessObjectLayer.IService;
 using DataAccessLayer.Models;
 using Repository;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BusinessObjectLayer.Services
 {
     public class ServiceLocationService : IServiceLocationService
     {
-        private readonly GenericRepository<ServiceLocation> _genericRepository;
+        private readonly ServiceLocationrepository _serviceLocationrepository;
 
         public ServiceLocationService()
         {
-            _genericRepository = new GenericRepository<ServiceLocation>();
+            _serviceLocationrepository = new ServiceLocationrepository();
         }
-        public ServiceLocationService(GenericRepository<ServiceLocation> genericRepository)
+        public ServiceLocationService(ServiceLocationrepository serviceLocationrepository)
         {
-            _genericRepository = genericRepository;
+            _serviceLocationrepository = serviceLocationrepository;
         }
         public async Task<ServiceLocation> Create(ServiceLocationServiceRequest serviceLocation)
         {
@@ -33,7 +31,7 @@ namespace BusinessObjectLayer.Services
                     CampusId = serviceLocation.CampusId,
                     Status = StatusEnum.ACTIVE.ToString()
                 };
-                await _genericRepository.CreateAsync(newServiceLocationService);
+                await _serviceLocationrepository.CreateAsync(newServiceLocationService);
                 return newServiceLocationService;
 
             }
@@ -47,18 +45,19 @@ namespace BusinessObjectLayer.Services
         {
             try
             {
-                var check = await _genericRepository.GetByIdAsync(id);
+                var check = await _serviceLocationrepository.GetByIdAsync(id);
                 if (check == null)
                 {
                     throw new Exception("not found service location with id " + id);
                 }
                 check.Status = StatusEnum.DELETED.ToString();
-                await _genericRepository.UpdateAsync(check);
+                await _serviceLocationrepository.UpdateAsync(check);
                 return true;
             }
-            catch (Exception ex) {
-                throw new Exception(" can not delete this service location"+ ex.Message);
-                    
+            catch (Exception ex)
+            {
+                throw new Exception(" can not delete this service location" + ex.Message);
+
             }
         }
 
@@ -66,7 +65,7 @@ namespace BusinessObjectLayer.Services
         {
             try
             {
-                return await _genericRepository.GetAllAsync();
+                return await _serviceLocationrepository.GetAllAsync();
             }
             catch (Exception ex)
             {
@@ -78,7 +77,7 @@ namespace BusinessObjectLayer.Services
         {
             try
             {
-                return await _genericRepository.FindAsync(s => s.CampusId.Equals(id));
+                return await _serviceLocationrepository.FindAsync(s => s.CampusId.Equals(id));
             }
             catch (Exception ex)
             {
@@ -90,7 +89,7 @@ namespace BusinessObjectLayer.Services
         {
             try
             {
-                return await _genericRepository.GetByIdAsync(id);
+                return await _serviceLocationrepository.GetByIdAsync(id);
             }
             catch (Exception ex)
             {
@@ -99,18 +98,67 @@ namespace BusinessObjectLayer.Services
 
         }
 
+        public async Task<PaginationResult<List<ServiceLocationResponse>>>
+ SearchServiceLocationsAsync(ServicelocationFilter filter)
+        {
+            if (filter.Page <= 0) filter.Page = 1;
+            if (filter.PageSize <= 0) filter.PageSize = 10;
+
+            var (items, totalItems) =
+                await _serviceLocationrepository.SearchServiceLocationsAsync(
+                    status: StatusEnum.ACTIVE.ToString(),
+                    locationName: filter.Name,
+                    campusName: filter.CampusName,
+                    address: filter.Address,
+                    page: filter.Page,
+                    pageSize: filter.PageSize
+                );
+
+            var itemsDto = items.Select(MapToDTO).ToList();
+
+            return new PaginationResult<List<ServiceLocationResponse>>
+            {
+                Items = itemsDto,
+                TotalItems = totalItems,
+                PageSize = filter.PageSize,
+                CurrentPage = filter.Page,
+                TotalPages = (int)Math.Ceiling(
+                    totalItems / (double)filter.PageSize)
+            };
+        }
+
+
+        public ServiceLocationResponse MapToDTO(ServiceLocation serviceLocation)
+        {
+            return new ServiceLocationResponse
+            {
+                ServiceLocationId = serviceLocation.ServiceLocationId,
+                LocationName = serviceLocation.LocationName,
+                Campus = new CampusResponse
+                {
+                    CampusId = serviceLocation.Campus.CampusId,
+                    CampusName = serviceLocation.Campus.CampusName,
+                    Status = serviceLocation.Campus.Status,
+                    Address = serviceLocation.Campus.Address,
+                    Description = serviceLocation.Campus.Description,
+
+                },
+                Status = serviceLocation.Status
+            };
+        }
+
         public async Task<ServiceLocation> Update(Guid id, ServiceLocationServiceRequest serviceLocation)
         {
             try
             {
-                var check = await _genericRepository.GetByIdAsync(id);
+                var check = await _serviceLocationrepository.GetByIdAsync(id);
                 if (check == null)
                 {
                     throw new Exception("not found service location");
                 }
                 check.LocationName = serviceLocation.Name;
                 check.CampusId = serviceLocation.CampusId;
-                await _genericRepository.UpdateAsync(check);
+                await _serviceLocationrepository.UpdateAsync(check);
                 return check;
             }
             catch (Exception ex)
@@ -118,5 +166,6 @@ namespace BusinessObjectLayer.Services
                 throw new Exception(ex.Message);
             }
         }
+
     }
 }

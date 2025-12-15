@@ -11,6 +11,10 @@ public partial class ServiceLocation
 
     public string LocationName { get; set; } = null!;
 
+    public string? Address { get; set; }
+
+    public string? Description { get; set; }
+
     public string Status { get; set; } = null!;
 
     public virtual Campus Campus { get; set; } = null!;

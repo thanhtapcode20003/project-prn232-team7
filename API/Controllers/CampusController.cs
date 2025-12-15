@@ -1,7 +1,8 @@
-﻿using BusinessObjectLayer.DTOs.Campus;
+﻿
+using BusinessObjectLayer.DTOs;
+using BusinessObjectLayer.DTOs.Campus;
 using BusinessObjectLayer.Exceptions;
 using BusinessObjectLayer.IService;
-using BusinessObjectLayer.Services;
 using DataAccessLayer.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -13,18 +14,42 @@ namespace API.Controllers
     [ApiController]
     public class CampusController : ControllerBase
     {
+        private readonly ICampusService _campusService;
 
-        private readonly CampusService _campusService;
-        public CampusController(CampusService campusService)
+        public CampusController(ICampusService campusService)
         {
             _campusService = campusService;
         }
+
         [HttpGet("")]
         public async Task<IActionResult> GetAllCampuses()
         {
             var campuses = await _campusService.GetAllCampuses();
             return Ok(ApiResponse<List<Campus>>.Ok(campuses, "Get all campuses successfully"));
         }
+
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchCampuses(
+      [FromQuery] string? name = null,
+      [FromQuery] int page = 1,
+      [FromQuery] int pageSize = 10)
+        {
+            var filter = new CampusFilterDto
+            {
+                Name = name,
+                Page = page,
+                PageSize = pageSize
+            };
+
+            var result = await _campusService.SearchCampuses(filter);
+
+            return Ok(ApiResponse<PaginationResult<List<Campus>>>.Ok(
+                result,
+                "Search campuses successfully"
+            ));
+        }
+
+
         [HttpGet("{campusId}")]
         public async Task<IActionResult> GetCampusById([FromRoute] Guid campusId)
         {
@@ -41,6 +66,7 @@ namespace API.Controllers
             var newCampus = await _campusService.CreateCampus(campus);
             return Ok(ApiResponse<Campus>.Ok(newCampus, "Campus created successfully"));
         }
+
         [HttpPost("delete")]
         [Authorize]
         [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
@@ -50,6 +76,7 @@ namespace API.Controllers
             var delete = await _campusService.DeleteCampus(campusId);
             return Ok(ApiResponse<bool>.Ok(delete, "Campus deleted successfully"));
         }
+
         [HttpPut("update/{campusId}")]
         [Authorize]
         [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
@@ -59,6 +86,7 @@ namespace API.Controllers
             var updatedCampus = await _campusService.UpdateCampus(campusId, campus);
             return Ok(ApiResponse<Campus>.Ok(updatedCampus, "Campus updated successfully"));
         }
+
 
     }
 }
