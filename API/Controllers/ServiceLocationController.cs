@@ -1,9 +1,10 @@
-﻿using BusinessObjectLayer.DTOs.ServiceLocationRequest;
+﻿using BusinessObjectLayer.DTOs;
+using BusinessObjectLayer.DTOs.ServiceLocation;
+using BusinessObjectLayer.DTOs.ServiceLocationRequest;
 using BusinessObjectLayer.Exceptions;
 using BusinessObjectLayer.IService;
 using DataAccessLayer.Models;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers
@@ -37,6 +38,28 @@ namespace API.Controllers
             return Ok(ApiResponse<List<ServiceLocation>>.Ok(serviceLocations, "Get service locations by campus id successfully"));
         }
 
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchServiceLocations(
+            [FromQuery] string? name = null,
+            [FromQuery] string? campusName = null,
+            [FromQuery] string? address = null,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            var filter = new ServicelocationFilter()
+            {
+                Name = name,
+                CampusName = campusName,
+                Address = address,
+                Page = page,
+                PageSize = pageSize
+            };
+            var result = await _serviceLocationService.SearchServiceLocationsAsync(filter);
+            return Ok(ApiResponse<PaginationResult<List<ServiceLocationResponse>>>.Ok(
+                result,
+                "Search service locations successfully"
+            ));
+        }
 
         [HttpPost("create")]
         [Authorize]

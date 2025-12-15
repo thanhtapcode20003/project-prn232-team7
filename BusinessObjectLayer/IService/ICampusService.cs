@@ -1,4 +1,5 @@
-﻿using BusinessObjectLayer.DTOs.Campus;
+﻿using BusinessObjectLayer.DTOs;
+using BusinessObjectLayer.DTOs.Campus;
 using DataAccessLayer.Models;
 using System;
 using System.Collections.Generic;
@@ -15,5 +16,6 @@ namespace BusinessObjectLayer.IService
         Task<Campus> CreateCampus(CampusRequest campus);
         Task<Campus> UpdateCampus(Guid campusId, CampusRequest campus);
         Task<bool> DeleteCampus(Guid campusId);
+        Task<PaginationResult<List<Campus>>> SearchCampuses(CampusFilterDto filterDto);
     }
 }

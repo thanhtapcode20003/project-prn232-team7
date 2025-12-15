@@ -9,6 +9,10 @@ public partial class Campus
 
     public string CampusName { get; set; } = null!;
 
+    public string? Address { get; set; }
+
+    public string? Description { get; set; }
+
     public string Status { get; set; } = null!;
 
     public virtual ICollection<ServiceLocation> ServiceLocations { get; set; } = new List<ServiceLocation>();
