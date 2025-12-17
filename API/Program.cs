@@ -1,14 +1,12 @@
-﻿using DataAccessLayer.DbContxts;
-using Microsoft.EntityFrameworkCore;
-using API.Middleware;
+﻿using API.Middleware;
 using BusinessObjectLayer.IService;
 using BusinessObjectLayer.Services;
-using Repository;
+using DataAccessLayer.DbContxts;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using Microsoft.OpenApi.Models;
-using Microsoft.AspNetCore.Http;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -63,7 +61,7 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 // Configure Database
-builder.Services.AddDbContext<LostAndFoundSystemDbContext>(options =>
+builder.Services.AddDbContext<LostAndFoundDbContext>(options =>
 {
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection"),
@@ -125,6 +123,7 @@ builder.Services.AddScoped<IReturnRecordService, ReturnRecordService>();
 // builder.Services.AddScoped<IUserService, UserService>();
 
 // Register generic repository and concrete repositories so DI can supply repositories with the DbContext
+builder.Services.AddScoped<ICategoriesService, CategoriesService>();
 builder.Services.AddScoped(typeof(Repository.GenericRepository<>));
 builder.Services.AddScoped<Repository.UploadRepository>();
 builder.Services.AddScoped<Repository.ItemRepository>();

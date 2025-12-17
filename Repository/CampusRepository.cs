@@ -21,15 +21,15 @@ namespace Repository
         public async Task<Campus?> GetByNameAsync(string campusName)
         {
             return await _context.Campuses
-                .FirstOrDefaultAsync(c => c.CampusName == campusName);
+                .FirstOrDefaultAsync(c => c.Name == campusName);
         }
         public async Task<bool> ExistsAsync(Guid campusId)
         {
-            return await _context.Campuses.AnyAsync(c => c.CampusId == campusId);
+            return await _context.Campuses.AnyAsync(c => c.Id == campusId);
         }
         public async Task<bool> NameExistsAsync(string campusName)
         {
-            return await _context.Campuses.AnyAsync(c => c.CampusName == campusName);
+            return await _context.Campuses.AnyAsync(c => c.Name == campusName);
         }
         public async Task<List<Campus>> GetAllWithLocationsAsync()
         {
@@ -41,7 +41,7 @@ namespace Repository
         {
             return await _context.Campuses
                 .Include(c => c.ServiceLocations)
-                .FirstOrDefaultAsync(c => c.CampusId == campusId);
+                .FirstOrDefaultAsync(c => c.Id == campusId);
         }
         public async Task<(List<Campus> Items, int TotalItems)> SearchCampusesAsync(
          string? status,
@@ -59,7 +59,7 @@ namespace Repository
             if (!string.IsNullOrWhiteSpace(nameContains))
             {
                 query = query.Where(c =>
-                    c.CampusName.Contains(nameContains));
+                    c.Name.Contains(nameContains));
             }
 
             var totalItems = await query.CountAsync();
