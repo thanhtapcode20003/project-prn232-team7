@@ -3,6 +3,7 @@ using BusinessObjectLayer.DTOs.Campus;
 using BusinessObjectLayer.DTOs.ServiceLocation;
 using BusinessObjectLayer.DTOs.ServiceLocationRequest;
 using BusinessObjectLayer.Enum;
+using BusinessObjectLayer.Exceptions;
 using BusinessObjectLayer.IService;
 using DataAccessLayer.Models;
 using Repository;
@@ -13,96 +14,111 @@ namespace BusinessObjectLayer.Services
     {
         private readonly ServiceLocationrepository _serviceLocationrepository;
 
-        public ServiceLocationService()
-        {
-            _serviceLocationrepository = new ServiceLocationrepository();
-        }
         public ServiceLocationService(ServiceLocationrepository serviceLocationrepository)
         {
             _serviceLocationrepository = serviceLocationrepository;
         }
-        public async Task<ServiceLocation> Create(ServiceLocationServiceRequest serviceLocation)
+
+        /* ===========================
+           CREATE
+        ============================ */
+        public async Task<ServiceLocationResponse> Create(ServiceLocationServiceRequest request)
         {
             try
             {
-                var newServiceLocationService = new ServiceLocation
+                var entity = new ServiceLocation
                 {
-                    LocationName = serviceLocation.Name,
-                    CampusId = serviceLocation.CampusId,
-                    Status = StatusEnum.ACTIVE.ToString()
+                    Name = request.Name,
+                    Address = request.Address,
+                    Description = request.Description,
+                    CampusId = request.CampusId,
+                    Status = StatusEnum.ACTIVE.ToString(),
+                    Datecreate = DateTime.UtcNow
                 };
-                await _serviceLocationrepository.CreateAsync(newServiceLocationService);
-                return newServiceLocationService;
 
+                await _serviceLocationrepository.CreateAsync(entity);
+                return MapToDTO(entity);
             }
             catch (Exception ex)
             {
-                throw new Exception("An error occurred while creating the service location.", ex);
+                throw new ApiException(
+                    ApiError.InternalServerError(
+                        "Failed to create service location",
+                        ex.Message
+                    )
+                );
             }
         }
 
+        /* ===========================
+           DELETE (Soft Delete)
+        ============================ */
         public async Task<bool> Delete(Guid id)
         {
-            try
-            {
-                var check = await _serviceLocationrepository.GetByIdAsync(id);
-                if (check == null)
-                {
-                    throw new Exception("not found service location with id " + id);
-                }
-                check.Status = StatusEnum.DELETED.ToString();
-                await _serviceLocationrepository.UpdateAsync(check);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(" can not delete this service location" + ex.Message);
+            var serviceLocation = await _serviceLocationrepository.GetByIdAsync(id)
+                ?? throw new NotFoundException("ServiceLocation", id.ToString());
 
-            }
+            serviceLocation.Status = StatusEnum.DELETED.ToString();
+
+            await _serviceLocationrepository.UpdateAsync(serviceLocation);
+            return true;
         }
 
-        public async Task<List<ServiceLocation>> GetAll()
+        /* ===========================
+           GET ALL
+        ============================ */
+        public async Task<List<ServiceLocationResponse>> GetAll()
         {
             try
             {
-                return await _serviceLocationrepository.GetAllAsync();
+                var list = await _serviceLocationrepository.GetAllAsync();
+                return list.Select(MapToDTO).ToList();
             }
             catch (Exception ex)
             {
-                throw new Exception("can not get all service location" + ex.Message);
+                throw new ApiException(
+                    ApiError.InternalServerError(
+                        "Failed to retrieve service locations",
+                        ex.Message
+                    )
+                );
             }
         }
 
-        public async Task<List<ServiceLocation>> GetAllByCampusId(Guid id)
+        /* ===========================
+           GET BY CAMPUS ID
+        ============================ */
+        public async Task<List<ServiceLocationResponse>> GetAllByCampusId(Guid campusId)
         {
-            try
-            {
-                return await _serviceLocationrepository.FindAsync(s => s.CampusId.Equals(id));
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(ex.Message);
-            }
+            var services = await _serviceLocationrepository
+                .FindAsync(s => s.CampusId == campusId);
+
+            return services.Select(MapToDTO).ToList();
         }
 
-        public async Task<ServiceLocation> GetById(Guid id)
+        /* ===========================
+           GET BY ID
+        ============================ */
+        public async Task<ServiceLocationResponse> GetById(Guid id)
         {
-            try
-            {
-                return await _serviceLocationrepository.GetByIdAsync(id);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(ex.Message);
-            }
+            var serviceLocation = await _serviceLocationrepository.GetByIdAsync(id)
+                ?? throw new NotFoundException("ServiceLocation", id.ToString());
 
+            return MapToDTO(serviceLocation);
         }
 
+        /* ===========================
+           SEARCH + PAGINATION
+        ============================ */
         public async Task<PaginationResult<List<ServiceLocationResponse>>>
- SearchServiceLocationsAsync(ServicelocationFilter filter)
+            SearchServiceLocationsAsync(ServicelocationFilter filter)
         {
-            if (filter.Page <= 0) filter.Page = 1;
-            if (filter.PageSize <= 0) filter.PageSize = 10;
+            if (filter.Page <= 0 || filter.PageSize <= 0)
+            {
+                throw new ApiException(
+                    ApiError.ValidationError("Page and PageSize must be greater than zero")
+                );
+            }
 
             var (items, totalItems) =
                 await _serviceLocationrepository.SearchServiceLocationsAsync(
@@ -114,58 +130,56 @@ namespace BusinessObjectLayer.Services
                     pageSize: filter.PageSize
                 );
 
-            var itemsDto = items.Select(MapToDTO).ToList();
-
             return new PaginationResult<List<ServiceLocationResponse>>
             {
-                Items = itemsDto,
+                Items = items.Select(MapToDTO).ToList(),
                 TotalItems = totalItems,
                 PageSize = filter.PageSize,
                 CurrentPage = filter.Page,
-                TotalPages = (int)Math.Ceiling(
-                    totalItems / (double)filter.PageSize)
+                TotalPages = (int)Math.Ceiling(totalItems / (double)filter.PageSize)
             };
         }
 
+        /* ===========================
+           UPDATE
+        ============================ */
+        public async Task<ServiceLocationResponse> Update(Guid id, ServiceLocationServiceRequest request)
+        {
+            var serviceLocation = await _serviceLocationrepository.GetByIdAsync(id)
+                ?? throw new NotFoundException("ServiceLocation", id.ToString());
 
-        public ServiceLocationResponse MapToDTO(ServiceLocation serviceLocation)
+            serviceLocation.Name = request.Name;
+            serviceLocation.Address = request.Address;
+            serviceLocation.Description = request.Description;
+            serviceLocation.CampusId = request.CampusId;
+            serviceLocation.Dateupdate = DateTime.UtcNow;
+
+            await _serviceLocationrepository.UpdateAsync(serviceLocation);
+            return MapToDTO(serviceLocation);
+        }
+
+        /* ===========================
+           MAPPER
+        ============================ */
+        private static ServiceLocationResponse MapToDTO(ServiceLocation serviceLocation)
         {
             return new ServiceLocationResponse
             {
-                ServiceLocationId = serviceLocation.ServiceLocationId,
-                LocationName = serviceLocation.LocationName,
+                ServiceLocationId = serviceLocation.Id,
+                LocationName = serviceLocation.Name,
+                Address = serviceLocation.Address,
+                Description = serviceLocation.Description,
+                Status = serviceLocation.Status,
+
                 Campus = new CampusResponse
                 {
-                    CampusId = serviceLocation.Campus.CampusId,
-                    CampusName = serviceLocation.Campus.CampusName,
+                    CampusId = serviceLocation.Campus.Id,
+                    CampusName = serviceLocation.Campus.Name,
                     Status = serviceLocation.Campus.Status,
                     Address = serviceLocation.Campus.Address,
                     Description = serviceLocation.Campus.Description,
-
                 },
-                Status = serviceLocation.Status
             };
         }
-
-        public async Task<ServiceLocation> Update(Guid id, ServiceLocationServiceRequest serviceLocation)
-        {
-            try
-            {
-                var check = await _serviceLocationrepository.GetByIdAsync(id);
-                if (check == null)
-                {
-                    throw new Exception("not found service location");
-                }
-                check.LocationName = serviceLocation.Name;
-                check.CampusId = serviceLocation.CampusId;
-                await _serviceLocationrepository.UpdateAsync(check);
-                return check;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(ex.Message);
-            }
-        }
-
     }
 }

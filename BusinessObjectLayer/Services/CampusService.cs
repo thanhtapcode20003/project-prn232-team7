@@ -21,22 +21,19 @@ namespace BusinessObjectLayer.Services
             _campusRepository = campusRepository;
         }
 
-        public async Task<Campus> CreateCampus(CampusRequest campus)
+        public async Task<CampusResponse> CreateCampus(CampusRequest campus)
         {
-            // (Optional) check trùng tên
-            if (await _campusRepository.NameExistsAsync(campus.Name))
-            {
-                throw new Exception("Campus name already exists");
-            }
-
             var newCampus = new Campus
             {
-                CampusName = campus.Name,
+                Name = campus.Name,
+                Address = campus.Address,
+                Description = campus.Description,
+                Datecreate = DateTime.UtcNow,
                 Status = StatusEnum.ACTIVE.ToString()
             };
 
             await _campusRepository.CreateAsync(newCampus);
-            return newCampus;
+            return MapToDTO(newCampus);
         }
 
         public async Task<bool> DeleteCampus(Guid campusId)
@@ -54,14 +51,15 @@ namespace BusinessObjectLayer.Services
             return true;
         }
 
-        public async Task<List<Campus>> GetAllCampuses()
+        public async Task<List<CampusResponse>> GetAllCampuses()
         {
-            return await _campusRepository.FindAsync(
+            var listcampus = await _campusRepository.FindAsync(
                 c => c.Status == StatusEnum.ACTIVE.ToString()
             );
+            return listcampus.Select(MapToDTO).ToList();
         }
 
-        public async Task<Campus> GetCampusById(Guid campusId)
+        public async Task<CampusResponse> GetCampusById(Guid campusId)
         {
             var campus = await _campusRepository.GetByIdAsync(campusId);
 
@@ -70,10 +68,10 @@ namespace BusinessObjectLayer.Services
                 throw new NotFoundException("Campus", campusId.ToString());
             }
 
-            return campus;
+            return MapToDTO(campus);
         }
 
-        public async Task<Campus> UpdateCampus(Guid campusId, CampusRequest campus)
+        public async Task<CampusResponse> UpdateCampus(Guid campusId, CampusRequest campus)
         {
             var campusToUpdate = await _campusRepository.GetByIdAsync(campusId);
 
@@ -82,12 +80,13 @@ namespace BusinessObjectLayer.Services
                 throw new NotFoundException("Campus", campusId.ToString());
             }
 
-            campusToUpdate.CampusName = campus.Name;
+            campusToUpdate.Name = campus.Name;
+            campusToUpdate.Address = campus.Address;
+            campusToUpdate.Description = campus.Description;
             await _campusRepository.UpdateAsync(campusToUpdate);
-
-            return campusToUpdate;
+            return MapToDTO(campusToUpdate);
         }
-        public async Task<PaginationResult<List<Campus>>> SearchCampuses(CampusFilterDto filterDto)
+        public async Task<PaginationResult<List<CampusResponse>>> SearchCampuses(CampusFilterDto filterDto)
         {
             if (filterDto.Page <= 0) filterDto.Page = 1;
             if (filterDto.PageSize <= 0) filterDto.PageSize = 10;
@@ -99,10 +98,10 @@ namespace BusinessObjectLayer.Services
                     page: filterDto.Page,
                     pageSize: filterDto.PageSize
                 );
-
-            return new PaginationResult<List<Campus>>
+            var itemsDto = items.Select(MapToDTO).ToList();
+            return new PaginationResult<List<CampusResponse>>
             {
-                Items = items,
+                Items = itemsDto,
                 TotalItems = totalItems,
                 PageSize = filterDto.PageSize,
                 CurrentPage = filterDto.Page,
@@ -111,7 +110,17 @@ namespace BusinessObjectLayer.Services
             };
         }
 
-
+        public CampusResponse MapToDTO(Campus campus)
+        {
+            return new CampusResponse
+            {
+                CampusId = campus.Id,
+                CampusName = campus.Name,
+                Location = campus.Address,
+                Description = campus.Description,
+                Status = campus.Status
+            };
+        }
         private static bool IsActive(string? status)
         {
             return string.Equals(

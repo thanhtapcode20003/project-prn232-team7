@@ -1,27 +1,27 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
-using BusinessObjectLayer.IService;
+﻿using BusinessObjectLayer.Enum;
 using BusinessObjectLayer.Exceptions;
+using BusinessObjectLayer.IService;
 using DataAccessLayer.DbContxts;
 using DataAccessLayer.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
-using BusinessObjectLayer.Enum;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace BusinessObjectLayer.Services;
 
 public class AuthService : IAuthService
 {
-    private readonly LostAndFoundSystemDbContext _context;
+    private readonly LostAndFoundDbContext _context;
     private readonly IConfiguration _configuration;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
-        LostAndFoundSystemDbContext context,
+        LostAndFoundDbContext context,
         IConfiguration configuration,
         ILogger<AuthService> logger)
     {

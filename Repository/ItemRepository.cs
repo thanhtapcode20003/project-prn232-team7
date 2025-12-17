@@ -10,7 +10,7 @@ namespace Repository
         {
         }
 
-        public ItemRepository(LostAndFoundSystemDbContext context) : base(context)
+        public ItemRepository(LostAndFoundDbContext context) : base(context)
         {
         }
 
