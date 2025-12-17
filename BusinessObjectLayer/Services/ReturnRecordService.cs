@@ -1,5 +1,6 @@
 using BusinessObjectLayer.DTOs.ReturnRecord;
 using BusinessObjectLayer.IService;
+using BusinessObjectLayer.Exceptions;
 using DataAccessLayer.Models;
 using Repository;
 using System.Linq;
@@ -61,6 +62,24 @@ namespace BusinessObjectLayer.Services
 
         public async Task<ReturnRecordDto> CreateReturnRecordAsync(CreateReturnRecordDto createReturnRecordDto)
         {
+            // Validate Item exists
+            var itemExists = await _returnRecordRepository.ItemExistsAsync(createReturnRecordDto.ItemId);
+            if (!itemExists)
+                throw new NotFoundException("Item", createReturnRecordDto.ItemId.ToString());
+
+            // Validate FoundUser exists
+            var foundUserExists = await _returnRecordRepository.UserExistsAsync(createReturnRecordDto.FoundUserId);
+            if (!foundUserExists)
+                throw new NotFoundException("Found User", createReturnRecordDto.FoundUserId.ToString());
+
+            // Validate ReceiverUser exists if provided
+            if (createReturnRecordDto.ReceiverUserId.HasValue)
+            {
+                var receiverUserExists = await _returnRecordRepository.UserExistsAsync(createReturnRecordDto.ReceiverUserId.Value);
+                if (!receiverUserExists)
+                    throw new NotFoundException("Receiver User", createReturnRecordDto.ReceiverUserId.Value.ToString());
+            }
+
             var returnRecord = new ReturnRecord
             {
                 ReturnId = Guid.NewGuid(),
@@ -81,6 +100,24 @@ namespace BusinessObjectLayer.Services
             var existingReturnRecord = await _returnRecordRepository.GetByIdAsync(id);
             if (existingReturnRecord == null)
                 return null;
+
+            // Validate Item exists
+            var itemExists = await _returnRecordRepository.ItemExistsAsync(updateReturnRecordDto.ItemId);
+            if (!itemExists)
+                throw new NotFoundException("Item", updateReturnRecordDto.ItemId.ToString());
+
+            // Validate FoundUser exists
+            var foundUserExists = await _returnRecordRepository.UserExistsAsync(updateReturnRecordDto.FoundUserId);
+            if (!foundUserExists)
+                throw new NotFoundException("Found User", updateReturnRecordDto.FoundUserId.ToString());
+
+            // Validate ReceiverUser exists if provided
+            if (updateReturnRecordDto.ReceiverUserId.HasValue)
+            {
+                var receiverUserExists = await _returnRecordRepository.UserExistsAsync(updateReturnRecordDto.ReceiverUserId.Value);
+                if (!receiverUserExists)
+                    throw new NotFoundException("Receiver User", updateReturnRecordDto.ReceiverUserId.Value.ToString());
+            }
 
             existingReturnRecord.ItemId = updateReturnRecordDto.ItemId;
             existingReturnRecord.FoundUserId = updateReturnRecordDto.FoundUserId;

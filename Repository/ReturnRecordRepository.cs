@@ -77,6 +77,16 @@ namespace Repository
             return await _context.ReturnRecords.AnyAsync(r => r.ReturnId == id);
         }
 
+        public async Task<bool> ItemExistsAsync(Guid itemId)
+        {
+            return await _context.Items.AnyAsync(i => i.ItemId == itemId);
+        }
+
+        public async Task<bool> UserExistsAsync(Guid userId)
+        {
+            return await _context.Users.AnyAsync(u => u.UserId == userId);
+        }
+
         public async Task<List<ReturnRecord>> SearchReturnRecordsAsync(
             string? status = null,
             Guid? itemId = null,

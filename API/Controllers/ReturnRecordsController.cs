@@ -1,11 +1,12 @@
 using BusinessObjectLayer.DTOs.ReturnRecord;
 using BusinessObjectLayer.IService;
+using BusinessObjectLayer.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/return-records")]
     public class ReturnRecordsController : ControllerBase
     {
         private readonly IReturnRecordService _returnRecordService;
@@ -79,6 +80,7 @@ namespace API.Controllers
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<ReturnRecordDto>> CreateReturnRecord([FromBody] CreateReturnRecordDto createReturnRecordDto)
         {
             try
@@ -89,15 +91,26 @@ namespace API.Controllers
                 var createdReturnRecord = await _returnRecordService.CreateReturnRecordAsync(createReturnRecordDto);
                 return CreatedAtAction(nameof(GetReturnRecordById), new { id = createdReturnRecord.ReturnId }, createdReturnRecord);
             }
+            catch (NotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Resource not found when creating return record");
+                return NotFound(new { message = ex.Error.Message, details = ex.Error.Details });
+            }
+            catch (ApiException ex)
+            {
+                _logger.LogError(ex, "API error creating return record");
+                return StatusCode(ex.Error.StatusCode, new { message = ex.Error.Message, details = ex.Error.Details });
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating return record");
-                return StatusCode(500, new { message = "An error occurred" });
+                return StatusCode(500, new { message = "An error occurred while creating return record" });
             }
         }
 
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<ReturnRecordDto>> UpdateReturnRecord(Guid id, [FromBody] UpdateReturnRecordDto updateReturnRecordDto)
         {
@@ -112,10 +125,20 @@ namespace API.Controllers
 
                 return Ok(updatedReturnRecord);
             }
+            catch (NotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Resource not found when updating return record {ReturnRecordId}", id);
+                return NotFound(new { message = ex.Error.Message, details = ex.Error.Details });
+            }
+            catch (ApiException ex)
+            {
+                _logger.LogError(ex, "API error updating return record {ReturnRecordId}", id);
+                return StatusCode(ex.Error.StatusCode, new { message = ex.Error.Message, details = ex.Error.Details });
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating return record {ReturnRecordId}", id);
-                return StatusCode(500, new { message = "An error occurred" });
+                return StatusCode(500, new { message = "An error occurred while updating return record" });
             }
         }
 
@@ -140,5 +163,7 @@ namespace API.Controllers
         }
     }
 }
+
+
 
 
