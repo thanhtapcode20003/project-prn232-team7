@@ -9,7 +9,7 @@ namespace Repository
         public CampusRepository() : base()
         {
         }
-        public CampusRepository(LostAndFoundSystemDbContext context) : base(context)
+        public CampusRepository(LostAndFoundDbContext context) : base(context)
         {
         }
         public async Task<List<Campus>> GetByStatusAsync(string status)

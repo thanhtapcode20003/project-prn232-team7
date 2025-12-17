@@ -5,11 +5,17 @@ namespace DataAccessLayer.Models;
 
 public partial class Role
 {
-    public Guid RoleId { get; set; }
+    public Guid Id { get; set; }
 
-    public string RoleName { get; set; } = null!;
+    public string Name { get; set; } = null!;
 
-    public string Status { get; set; } = null!;
+    public string? Description { get; set; }
+
+    public string? Status { get; set; }
+
+    public DateTime? Datecreate { get; set; }
+
+    public DateTime? Dateupdate { get; set; }
 
     public virtual ICollection<User> Users { get; set; } = new List<User>();
 }

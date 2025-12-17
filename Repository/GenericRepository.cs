@@ -1,24 +1,19 @@
 ﻿using DataAccessLayer.DbContxts;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Repository
 {
     public class GenericRepository<T> where T : class
     {
-        protected LostAndFoundSystemDbContext _context;
+        protected LostAndFoundDbContext _context;
 
         public GenericRepository()
         {
-            _context ??= new LostAndFoundSystemDbContext();
+            _context ??= new LostAndFoundDbContext();
         }
 
-        public GenericRepository(LostAndFoundSystemDbContext context)
+        public GenericRepository(LostAndFoundDbContext context)
         {
             _context = context;
         }

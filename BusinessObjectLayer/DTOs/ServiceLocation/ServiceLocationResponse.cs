@@ -10,6 +10,7 @@ namespace BusinessObjectLayer.DTOs.ServiceLocation
 
         public string Status { get; set; } = null!;
 
+        public string Description { get; set; } = null!;
         public CampusResponse Campus { get; set; } = null!;
     }
 }

@@ -5,17 +5,21 @@ namespace DataAccessLayer.Models;
 
 public partial class ServiceLocation
 {
-    public Guid ServiceLocationId { get; set; }
+    public Guid Id { get; set; }
 
-    public Guid CampusId { get; set; }
-
-    public string LocationName { get; set; } = null!;
-
-    public string? Address { get; set; }
+    public string Name { get; set; } = null!;
 
     public string? Description { get; set; }
 
-    public string Status { get; set; } = null!;
+    public string? Address { get; set; }
+
+    public string? Status { get; set; }
+
+    public DateTime? Datecreate { get; set; }
+
+    public DateTime? Dateupdate { get; set; }
+
+    public Guid CampusId { get; set; }
 
     public virtual Campus Campus { get; set; } = null!;
 

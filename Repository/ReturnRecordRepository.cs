@@ -10,7 +10,7 @@ namespace Repository
         {
         }
 
-        public ReturnRecordRepository(LostAndFoundSystemDbContext context) : base(context)
+        public ReturnRecordRepository(LostAndFoundDbContext context) : base(context)
         {
         }
 

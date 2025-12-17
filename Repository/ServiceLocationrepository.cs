@@ -8,7 +8,7 @@ namespace Repository
         public ServiceLocationrepository() : base()
         {
         }
-        public ServiceLocationrepository(LostAndFoundSystemDbContext context) : base(context)
+        public ServiceLocationrepository(LostAndFoundDbContext context) : base(context)
         {
         }
         public async Task<List<ServiceLocation>> GetAllByCampusIdAsync(Guid campusId)
