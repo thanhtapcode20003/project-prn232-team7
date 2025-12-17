@@ -3,7 +3,6 @@ using BusinessObjectLayer.DTOs.ServiceLocation;
 using BusinessObjectLayer.DTOs.ServiceLocationRequest;
 using BusinessObjectLayer.Exceptions;
 using BusinessObjectLayer.IService;
-using DataAccessLayer.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,19 +22,19 @@ namespace API.Controllers
         public async Task<IActionResult> GetAllServiceLocations()
         {
             var serviceLocations = await _serviceLocationService.GetAll();
-            return Ok(ApiResponse<List<ServiceLocation>>.Ok(serviceLocations, "Get all service locations successfully"));
+            return Ok(ApiResponse<List<ServiceLocationResponse>>.Ok(serviceLocations, "Get all service locations successfully"));
         }
         [HttpGet("{serviceLocationId}")]
         public async Task<IActionResult> GetServiceLocationById([FromRoute] Guid serviceLocationId)
         {
             var serviceLocation = await _serviceLocationService.GetById(serviceLocationId);
-            return Ok(ApiResponse<ServiceLocation>.Ok(serviceLocation, "Get service location by id successfully"));
+            return Ok(ApiResponse<ServiceLocationResponse>.Ok(serviceLocation, "Get service location by id successfully"));
         }
         [HttpGet("campus/{campusId}")]
         public async Task<IActionResult> GetServiceLocationsByCampusId([FromRoute] Guid campusId)
         {
             var serviceLocations = await _serviceLocationService.GetAllByCampusId(campusId);
-            return Ok(ApiResponse<List<ServiceLocation>>.Ok(serviceLocations, "Get service locations by campus id successfully"));
+            return Ok(ApiResponse<List<ServiceLocationResponse>>.Ok(serviceLocations, "Get service locations by campus id successfully"));
         }
 
         [HttpGet("search")]
@@ -68,9 +67,9 @@ namespace API.Controllers
         public async Task<IActionResult> CreateServiceLocation([FromBody] ServiceLocationServiceRequest serviceLocation)
         {
             var newServiceLocation = await _serviceLocationService.Create(serviceLocation);
-            return Ok(ApiResponse<ServiceLocation>.Ok(newServiceLocation, "Service location created successfully"));
+            return Ok(ApiResponse<ServiceLocationResponse>.Ok(newServiceLocation, "Service location created successfully"));
         }
-        [HttpPost("delete")]
+        [HttpDelete("delete")]
         [Authorize]
         [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
@@ -86,7 +85,7 @@ namespace API.Controllers
         public async Task<IActionResult> UpdateServiceLocation([FromRoute] Guid serviceLocationId, [FromBody] ServiceLocationServiceRequest serviceLocation)
         {
             var updatedServiceLocation = await _serviceLocationService.Update(serviceLocationId, serviceLocation);
-            return Ok(ApiResponse<ServiceLocation>.Ok(updatedServiceLocation, "Service location updated successfully"));
+            return Ok(ApiResponse<ServiceLocationResponse>.Ok(updatedServiceLocation, "Service location updated successfully"));
         }
 
     }

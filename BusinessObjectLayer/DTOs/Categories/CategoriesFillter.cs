@@ -1,6 +1,6 @@
-﻿namespace BusinessObjectLayer.DTOs.Campus
+﻿namespace BusinessObjectLayer.DTOs.Categories
 {
-    public class CampusFilterDto
+    public class CategoriesFillter
     {
         public string? Name { get; set; }
 

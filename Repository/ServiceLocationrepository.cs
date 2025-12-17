@@ -19,7 +19,7 @@ namespace Repository
         }
         public async Task<bool> ExistsAsync(Guid serviceLocationId)
         {
-            return await _context.ServiceLocations.AnyAsync(sl => sl.ServiceLocationId == serviceLocationId);
+            return await _context.ServiceLocations.AnyAsync(sl => sl.Id == serviceLocationId);
         }
         public async Task<List<ServiceLocation>> GetAllWithCampusAsync()
         {
@@ -31,7 +31,7 @@ namespace Repository
         {
             return await _context.ServiceLocations
                 .Include(sl => sl.Campus)
-                .FirstOrDefaultAsync(sl => sl.ServiceLocationId == serviceLocationId);
+                .FirstOrDefaultAsync(sl => sl.Id == serviceLocationId);
         }
         public async Task<(List<ServiceLocation>, int)> SearchServiceLocationsAsync(
       string? status,
@@ -53,13 +53,13 @@ namespace Repository
             if (!string.IsNullOrWhiteSpace(locationName))
             {
                 query = query.Where(sl =>
-                    sl.LocationName.Contains(locationName));
+                    sl.Name.Contains(locationName));
             }
 
             if (!string.IsNullOrWhiteSpace(campusName))
             {
                 query = query.Where(sl =>
-                    sl.Campus.CampusName.Contains(campusName));
+                    sl.Campus.Name.Contains(campusName));
             }
 
             if (!string.IsNullOrWhiteSpace(address))
