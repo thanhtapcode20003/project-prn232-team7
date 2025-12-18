@@ -1,6 +1,7 @@
 using BusinessObjectLayer.DTOs.ReturnRecord;
+using BusinessObjectLayer.Enum;
 using BusinessObjectLayer.IService;
-using BusinessObjectLayer.Exceptions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers
@@ -21,14 +22,13 @@ namespace API.Controllers
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<PagedResult<ReturnRecordDto>>> GetAllReturnRecords(
+        public async Task<ActionResult<BusinessObjectLayer.IService.PagedResult<ReturnRecordDto>>> GetReturnRecords(
             [FromQuery] string? status = null,
-            [FromQuery] Guid? itemId = null,
-            [FromQuery] Guid? staffId = null,
             [FromQuery] Guid? userId = null,
+            [FromQuery] Guid? staffId = null,
+            [FromQuery] Guid? itemId = null,
             [FromQuery] DateTime? fromDate = null,
             [FromQuery] DateTime? toDate = null,
-            [FromQuery] string? searchTerm = null,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10)
         {
@@ -37,22 +37,21 @@ namespace API.Controllers
                 var filter = new ReturnRecordFilterDto
                 {
                     Status = status,
-                    ItemId = itemId,
-                    StaffId = staffId,
                     UserId = userId,
+                    StaffId = staffId,
+                    ItemId = itemId,
                     FromDate = fromDate,
                     ToDate = toDate,
-                    SearchTerm = searchTerm,
                     PageNumber = pageNumber,
                     PageSize = pageSize
                 };
 
-                var result = await _returnRecordService.SearchReturnRecordsAsync(filter);
+                var result = await _returnRecordService.SearchAsync(filter);
                 return Ok(result);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting all return records");
+                _logger.LogError(ex, "Error getting return records");
                 return StatusCode(500, new { message = "An error occurred while retrieving return records" });
             }
         }
@@ -60,15 +59,15 @@ namespace API.Controllers
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<ReturnRecordDto>> GetReturnRecordById(Guid id)
+        public async Task<ActionResult<ReturnRecordDto>> GetById(Guid id)
         {
             try
             {
-                var returnRecord = await _returnRecordService.GetReturnRecordByIdAsync(id);
-                if (returnRecord == null)
+                var record = await _returnRecordService.GetByIdAsync(id);
+                if (record == null)
                     return NotFound(new { message = $"Return record with ID {id} not found" });
 
-                return Ok(returnRecord);
+                return Ok(record);
             }
             catch (Exception ex)
             {
@@ -78,28 +77,19 @@ namespace API.Controllers
         }
 
         [HttpPost]
+        [Consumes("multipart/form-data")]
+        [Authorize(Roles = nameof(RoleEnum.Admin) + "," + nameof(RoleEnum.Staff))]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<ReturnRecordDto>> CreateReturnRecord([FromBody] CreateReturnRecordDto createReturnRecordDto)
+        public async Task<ActionResult<ReturnRecordDto>> Create([FromForm] CreateReturnRecordDto dto)
         {
             try
             {
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                var createdReturnRecord = await _returnRecordService.CreateReturnRecordAsync(createReturnRecordDto);
-                return CreatedAtAction(nameof(GetReturnRecordById), new { id = createdReturnRecord.Id }, createdReturnRecord);
-            }
-            catch (NotFoundException ex)
-            {
-                _logger.LogWarning(ex, "Resource not found when creating return record");
-                return NotFound(new { message = ex.Error.Message, details = ex.Error.Details });
-            }
-            catch (ApiException ex)
-            {
-                _logger.LogError(ex, "API error creating return record");
-                return StatusCode(ex.Error.StatusCode, new { message = ex.Error.Message, details = ex.Error.Details });
+                var created = await _returnRecordService.CreateAsync(dto);
+                return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
             }
             catch (Exception ex)
             {
@@ -109,31 +99,22 @@ namespace API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Consumes("multipart/form-data")]
+        [Authorize(Roles = nameof(RoleEnum.Admin) + "," + nameof(RoleEnum.Staff))]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<ReturnRecordDto>> UpdateReturnRecord(Guid id, [FromBody] UpdateReturnRecordDto updateReturnRecordDto)
+        public async Task<ActionResult<ReturnRecordDto>> Update(Guid id, [FromForm] UpdateReturnRecordDto dto)
         {
             try
             {
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                var updatedReturnRecord = await _returnRecordService.UpdateReturnRecordAsync(id, updateReturnRecordDto);
-                if (updatedReturnRecord == null)
+                var updated = await _returnRecordService.UpdateAsync(id, dto);
+                if (updated == null)
                     return NotFound(new { message = $"Return record with ID {id} not found" });
 
-                return Ok(updatedReturnRecord);
-            }
-            catch (NotFoundException ex)
-            {
-                _logger.LogWarning(ex, "Resource not found when updating return record {ReturnRecordId}", id);
-                return NotFound(new { message = ex.Error.Message, details = ex.Error.Details });
-            }
-            catch (ApiException ex)
-            {
-                _logger.LogError(ex, "API error updating return record {ReturnRecordId}", id);
-                return StatusCode(ex.Error.StatusCode, new { message = ex.Error.Message, details = ex.Error.Details });
+                return Ok(updated);
             }
             catch (Exception ex)
             {
@@ -143,13 +124,14 @@ namespace API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = nameof(RoleEnum.Admin) + "," + nameof(RoleEnum.Staff))]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> DeleteReturnRecord(Guid id)
+        public async Task<IActionResult> Delete(Guid id)
         {
             try
             {
-                var result = await _returnRecordService.DeleteReturnRecordAsync(id);
+                var result = await _returnRecordService.DeleteAsync(id);
                 if (!result)
                     return NotFound(new { message = $"Return record with ID {id} not found" });
 
@@ -158,12 +140,8 @@ namespace API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting return record {ReturnRecordId}", id);
-                return StatusCode(500, new { message = "An error occurred" });
+                return StatusCode(500, new { message = "An error occurred while deleting return record" });
             }
         }
     }
 }
-
-
-
-

@@ -1,171 +1,234 @@
 using BusinessObjectLayer.DTOs.ReturnRecord;
-using BusinessObjectLayer.IService;
 using BusinessObjectLayer.Exceptions;
+using BusinessObjectLayer.IService;
 using DataAccessLayer.Models;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Repository;
-using System.Linq;
 
 namespace BusinessObjectLayer.Services
 {
     public class ReturnRecordService : IReturnRecordService
     {
         private readonly ReturnRecordRepository _returnRecordRepository;
+        private readonly ItemRepository _itemRepository;
+        private readonly IAuthService _authService;
+        private readonly IWebHostEnvironment _environment;
+        private const string UploadFolder = "uploads";
+        private const long MaxFileSize = 10 * 1024 * 1024; // 10MB
+        private readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".pdf" };
 
-        public ReturnRecordService()
-        {
-            _returnRecordRepository = new ReturnRecordRepository();
-        }
-
-        public ReturnRecordService(ReturnRecordRepository returnRecordRepository)
+        public ReturnRecordService(
+            ReturnRecordRepository returnRecordRepository,
+            ItemRepository itemRepository,
+            IAuthService authService,
+            IWebHostEnvironment environment)
         {
             _returnRecordRepository = returnRecordRepository;
+            _itemRepository = itemRepository;
+            _authService = authService;
+            _environment = environment;
         }
 
-        public async Task<PagedResult<ReturnRecordDto>> SearchReturnRecordsAsync(ReturnRecordFilterDto filter)
+        public async Task<List<ReturnRecordDto>> GetAllAsync()
         {
-            var returnRecords = await _returnRecordRepository.SearchReturnRecordsAsync(
+            var records = await _returnRecordRepository.GetAllWithDetailsAsync();
+            return records.Select(MapToDto).ToList();
+        }
+
+        public async Task<PagedResult<ReturnRecordDto>> SearchAsync(ReturnRecordFilterDto filter)
+        {
+            var records = await _returnRecordRepository.SearchAsync(
                 status: filter.Status,
-                itemId: filter.ItemId,
-                staffId: filter.StaffId,
                 userId: filter.UserId,
+                staffId: filter.StaffId,
+                itemId: filter.ItemId,
                 fromDate: filter.FromDate,
                 toDate: filter.ToDate,
-                searchTerm: filter.SearchTerm,
                 pageNumber: filter.PageNumber,
                 pageSize: filter.PageSize
             );
 
-            var totalCount = await _returnRecordRepository.CountReturnRecordsAsync(
+            var totalCount = await _returnRecordRepository.CountAsync(
                 status: filter.Status,
-                itemId: filter.ItemId,
-                staffId: filter.StaffId,
                 userId: filter.UserId,
+                staffId: filter.StaffId,
+                itemId: filter.ItemId,
                 fromDate: filter.FromDate,
-                toDate: filter.ToDate,
-                searchTerm: filter.SearchTerm
+                toDate: filter.ToDate
             );
 
             return new PagedResult<ReturnRecordDto>
             {
-                Items = returnRecords.Select(MapToDto).ToList(),
+                Items = records.Select(MapToDto).ToList(),
                 TotalCount = totalCount,
                 PageNumber = filter.PageNumber,
                 PageSize = filter.PageSize
             };
         }
 
-        public async Task<ReturnRecordDto?> GetReturnRecordByIdAsync(Guid id)
+        public async Task<ReturnRecordDto?> GetByIdAsync(Guid id)
         {
-            var returnRecord = await _returnRecordRepository.GetByIdWithDetailsAsync(id);
-            return returnRecord == null ? null : MapToDto(returnRecord);
+            var record = await _returnRecordRepository.GetByIdWithDetailsAsync(id);
+            return record == null ? null : MapToDto(record);
         }
 
-        public async Task<ReturnRecordDto> CreateReturnRecordAsync(CreateReturnRecordDto createReturnRecordDto)
+        public async Task<ReturnRecordDto> CreateAsync(CreateReturnRecordDto dto)
         {
-            // Validate Item exists
-            var itemExists = await _returnRecordRepository.ItemExistsAsync(createReturnRecordDto.ItemId);
-            if (!itemExists)
-                throw new NotFoundException("Item", createReturnRecordDto.ItemId.ToString());
+            var user = _authService.GetCurrentUser();
+            if (user == null)
+            {
+                throw new UnauthorizedException("User not authenticated");
+            }
 
-            // Validate Staff exists
-            var staffExists = await _returnRecordRepository.UserExistsAsync(createReturnRecordDto.StaffId);
-            if (!staffExists)
-                throw new NotFoundException("Staff User", createReturnRecordDto.StaffId.ToString());
+            var item = await _itemRepository.GetByIdAsync(dto.ItemId);
+            if (item == null)
+            {
+                throw new NotFoundException("Item not found with id", dto.ItemId.ToString());
+            }
 
-            // Validate User exists
-            var userExists = await _returnRecordRepository.UserExistsAsync(createReturnRecordDto.UserId);
-            if (!userExists)
-                throw new NotFoundException("User", createReturnRecordDto.UserId.ToString());
+            // Lưu file ảnh nếu có
+            var imgFontPath = dto.ImgCccdFont != null ? await SaveFileAsync(dto.ImgCccdFont) : null;
+            var imgBackPath = dto.ImgCccdBack != null ? await SaveFileAsync(dto.ImgCccdBack) : null;
+            var evidencePath = dto.EvidenceImg != null ? await SaveFileAsync(dto.EvidenceImg) : null;
+            var confirmPath = dto.ConfirmImg != null ? await SaveFileAsync(dto.ConfirmImg) : null;
 
-            var returnRecord = new ReturnRecord
+            var record = new ReturnRecord
             {
                 Id = Guid.NewGuid(),
-                ItemId = createReturnRecordDto.ItemId,
-                StaffId = createReturnRecordDto.StaffId,
-                UserId = createReturnRecordDto.UserId,
-                ImgCccdFont = createReturnRecordDto.ImgCccdFont,
-                ImgCccdBack = createReturnRecordDto.ImgCccdBack,
-                EvidenceImg = createReturnRecordDto.EvidenceImg,
-                ConfirmImg = createReturnRecordDto.ConfirmImg,
-                VerifyNotes = createReturnRecordDto.VerifyNotes,
-                Status = createReturnRecordDto.Status,
-                DateCreated = DateTime.Now,
-                DateUpdate = DateTime.Now
+                ItemId = dto.ItemId,
+                StaffId = user.Id,
+                UserId = dto.UserId,
+                ImgCccdFont = imgFontPath,
+                ImgCccdBack = imgBackPath,
+                EvidenceImg = evidencePath,
+                ConfirmImg = confirmPath,
+                VerifyNotes = dto.VerifyNotes,
+                Status = dto.Status ?? "PENDING",
+                DateCreated = DateTime.UtcNow,
+                DateUpdate = DateTime.UtcNow
             };
 
-            await _returnRecordRepository.CreateAsync(returnRecord);
-            var createdReturnRecord = await _returnRecordRepository.GetByIdWithDetailsAsync(returnRecord.Id);
-            return MapToDto(createdReturnRecord!);
+            await _returnRecordRepository.CreateAsync(record);
+            var created = await _returnRecordRepository.GetByIdWithDetailsAsync(record.Id);
+            return MapToDto(created!);
         }
 
-        public async Task<ReturnRecordDto?> UpdateReturnRecordAsync(Guid id, UpdateReturnRecordDto updateReturnRecordDto)
+        public async Task<ReturnRecordDto?> UpdateAsync(Guid id, UpdateReturnRecordDto dto)
         {
-            var existingReturnRecord = await _returnRecordRepository.GetByIdAsync(id);
-            if (existingReturnRecord == null)
+            var record = await _returnRecordRepository.GetByIdWithDetailsAsync(id);
+            if (record == null)
+            {
                 return null;
+            }
 
-            // Validate Item exists
-            var itemExists = await _returnRecordRepository.ItemExistsAsync(updateReturnRecordDto.ItemId);
-            if (!itemExists)
-                throw new NotFoundException("Item", updateReturnRecordDto.ItemId.ToString());
+            // Nếu gửi file mới thì lưu và cập nhật path, nếu không thì giữ nguyên
+            if (dto.ImgCccdFont != null)
+            {
+                record.ImgCccdFont = await SaveFileAsync(dto.ImgCccdFont);
+            }
 
-            // Validate Staff exists
-            var staffExists = await _returnRecordRepository.UserExistsAsync(updateReturnRecordDto.StaffId);
-            if (!staffExists)
-                throw new NotFoundException("Staff User", updateReturnRecordDto.StaffId.ToString());
+            if (dto.ImgCccdBack != null)
+            {
+                record.ImgCccdBack = await SaveFileAsync(dto.ImgCccdBack);
+            }
 
-            // Validate User exists
-            var userExists = await _returnRecordRepository.UserExistsAsync(updateReturnRecordDto.UserId);
-            if (!userExists)
-                throw new NotFoundException("User", updateReturnRecordDto.UserId.ToString());
+            if (dto.EvidenceImg != null)
+            {
+                record.EvidenceImg = await SaveFileAsync(dto.EvidenceImg);
+            }
 
-            existingReturnRecord.ItemId = updateReturnRecordDto.ItemId;
-            existingReturnRecord.StaffId = updateReturnRecordDto.StaffId;
-            existingReturnRecord.UserId = updateReturnRecordDto.UserId;
-            existingReturnRecord.ImgCccdFont = updateReturnRecordDto.ImgCccdFont;
-            existingReturnRecord.ImgCccdBack = updateReturnRecordDto.ImgCccdBack;
-            existingReturnRecord.EvidenceImg = updateReturnRecordDto.EvidenceImg;
-            existingReturnRecord.ConfirmImg = updateReturnRecordDto.ConfirmImg;
-            existingReturnRecord.VerifyNotes = updateReturnRecordDto.VerifyNotes;
-            existingReturnRecord.Status = updateReturnRecordDto.Status;
-            existingReturnRecord.DateUpdate = DateTime.Now;
+            if (dto.ConfirmImg != null)
+            {
+                record.ConfirmImg = await SaveFileAsync(dto.ConfirmImg);
+            }
 
-            await _returnRecordRepository.UpdateAsync(existingReturnRecord);
-            var updatedReturnRecord = await _returnRecordRepository.GetByIdWithDetailsAsync(id);
-            return MapToDto(updatedReturnRecord!);
+            record.VerifyNotes = dto.VerifyNotes ?? record.VerifyNotes;
+            if (!string.IsNullOrEmpty(dto.Status))
+            {
+                record.Status = dto.Status;
+            }
+            record.DateUpdate = DateTime.UtcNow;
+
+            await _returnRecordRepository.UpdateAsync(record);
+            var updated = await _returnRecordRepository.GetByIdWithDetailsAsync(id);
+            return MapToDto(updated!);
         }
 
-        public async Task<bool> DeleteReturnRecordAsync(Guid id)
+        public async Task<bool> DeleteAsync(Guid id)
         {
-            var returnRecord = await _returnRecordRepository.GetByIdAsync(id);
-            if (returnRecord == null)
+            var record = await _returnRecordRepository.GetByIdAsync(id);
+            if (record == null)
+            {
                 return false;
+            }
 
-            await _returnRecordRepository.RemoveAsync(returnRecord);
+            await _returnRecordRepository.RemoveAsync(record);
             return true;
         }
 
-        private ReturnRecordDto MapToDto(ReturnRecord returnRecord)
+        private async Task<string> SaveFileAsync(IFormFile file)
+        {
+            ValidateFile(file);
+
+            var uploadsPath = Path.Combine(_environment.WebRootPath ?? _environment.ContentRootPath, UploadFolder);
+            if (!Directory.Exists(uploadsPath))
+            {
+                Directory.CreateDirectory(uploadsPath);
+            }
+
+            var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            var fileName = $"{Guid.NewGuid()}{fileExtension}";
+            var filePath = Path.Combine(uploadsPath, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            // Trả về path để lưu trong DB
+            return $"/{UploadFolder}/{fileName}";
+        }
+
+        private void ValidateFile(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+            {
+                throw new ArgumentException("File is required and cannot be empty");
+            }
+
+            if (file.Length > MaxFileSize)
+            {
+                throw new ArgumentException($"File size exceeds the maximum allowed size of {MaxFileSize / (1024 * 1024)}MB");
+            }
+
+            var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!AllowedExtensions.Contains(fileExtension))
+            {
+                throw new ArgumentException($"File type not allowed. Allowed types: {string.Join(", ", AllowedExtensions)}");
+            }
+        }
+
+        private ReturnRecordDto MapToDto(ReturnRecord record)
         {
             return new ReturnRecordDto
             {
-                Id = returnRecord.Id,
-                ItemId = returnRecord.ItemId,
-                StaffId = returnRecord.StaffId,
-                UserId = returnRecord.UserId,
-                ImgCccdFont = returnRecord.ImgCccdFont,
-                ImgCccdBack = returnRecord.ImgCccdBack,
-                EvidenceImg = returnRecord.EvidenceImg,
-                ConfirmImg = returnRecord.ConfirmImg,
-                VerifyNotes = returnRecord.VerifyNotes,
-                Status = returnRecord.Status,
-                DateCreated = returnRecord.DateCreated,
-                DateUpdate = returnRecord.DateUpdate,
-                ItemName = returnRecord.Item?.Name,
-                StaffName = returnRecord.Staff?.Username,
-                UserName = returnRecord.User?.Username
+                Id = record.Id,
+                ItemId = record.ItemId,
+                StaffId = record.StaffId,
+                UserId = record.UserId,
+                ImgCccdFont = record.ImgCccdFont,
+                ImgCccdBack = record.ImgCccdBack,
+                EvidenceImg = record.EvidenceImg,
+                ConfirmImg = record.ConfirmImg,
+                VerifyNotes = record.VerifyNotes,
+                Status = record.Status,
+                DateCreated = record.DateCreated,
+                DateUpdate = record.DateUpdate,
+                ItemName = record.Item?.Name,
+                StaffName = record.Staff?.Username,
+                UserName = record.User?.Username
             };
         }
     }
 }
-

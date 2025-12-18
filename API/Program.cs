@@ -1,4 +1,4 @@
-﻿using API.Middleware;
+using API.Middleware;
 using BusinessObjectLayer.IService;
 using BusinessObjectLayer.Services;
 using DataAccessLayer.DbContxts;
@@ -134,6 +134,7 @@ builder.Services.AddScoped<Repository.UploadRepository>();
 builder.Services.AddScoped<Repository.ItemRepository>();
 builder.Services.AddScoped<Repository.ServiceLocationrepository>();
 builder.Services.AddScoped<Repository.CampusRepository>();
+builder.Services.AddScoped<Repository.ReturnRecordRepository>();
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
 

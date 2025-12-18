@@ -4,14 +4,11 @@ namespace BusinessObjectLayer.IService
 {
     public interface IReturnRecordService
     {
-        Task<PagedResult<ReturnRecordDto>> SearchReturnRecordsAsync(ReturnRecordFilterDto filter);
-        Task<ReturnRecordDto?> GetReturnRecordByIdAsync(Guid id);
-        Task<ReturnRecordDto> CreateReturnRecordAsync(CreateReturnRecordDto createReturnRecordDto);
-        Task<ReturnRecordDto?> UpdateReturnRecordAsync(Guid id, UpdateReturnRecordDto updateReturnRecordDto);
-        Task<bool> DeleteReturnRecordAsync(Guid id);
+        Task<List<ReturnRecordDto>> GetAllAsync();
+        Task<PagedResult<ReturnRecordDto>> SearchAsync(ReturnRecordFilterDto filter);
+        Task<ReturnRecordDto?> GetByIdAsync(Guid id);
+        Task<ReturnRecordDto> CreateAsync(CreateReturnRecordDto dto);
+        Task<ReturnRecordDto?> UpdateAsync(Guid id, UpdateReturnRecordDto dto);
+        Task<bool> DeleteAsync(Guid id);
     }
 }
-
-
-
-

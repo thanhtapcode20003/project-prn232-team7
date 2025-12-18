@@ -17,13 +17,9 @@ namespace BusinessObjectLayer.DTOs.ReturnRecord
         public DateTime? DateCreated { get; set; }
         public DateTime? DateUpdate { get; set; }
 
-        // Navigation properties
+        // Navigation display fields
         public string? ItemName { get; set; }
         public string? StaffName { get; set; }
         public string? UserName { get; set; }
     }
 }
-
-
-
-
