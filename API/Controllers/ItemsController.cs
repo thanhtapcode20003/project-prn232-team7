@@ -1,5 +1,6 @@
 ﻿using BusinessObjectLayer.DTOs.Item;
 using BusinessObjectLayer.Enum;
+using BusinessObjectLayer.Exceptions;
 using BusinessObjectLayer.IService;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -114,29 +115,25 @@ namespace API.Controllers
             }
         }
 
-        /// <summary>
-        /// Create new item
-        /// </summary>
         [HttpPost]
+        [Consumes("multipart/form-data")]
         [Authorize(Roles = nameof(RoleEnum.Admin) + "," + nameof(RoleEnum.Staff))]
-        [ProducesResponseType(StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<ItemDto>> CreateItem([FromBody] CreateItemDto createItemDto)
+        [ProducesResponseType(typeof(ApiResponse<ItemDto>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<ApiResponse<ItemDto>>> CreateItem(
+    [FromForm] CreateItemDto createItemDto)
         {
-            try
-            {
-                if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
 
-                var createdItem = await _itemService.CreateItemAsync(createItemDto);
-                return CreatedAtAction(nameof(GetItemById), new { id = createdItem.Id }, createdItem);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating item");
-                return StatusCode(500, new { message = "An error occurred" });
-            }
+
+            var createdItem = await _itemService.CreateItemAsync(createItemDto);
+
+            return CreatedAtAction(
+                nameof(GetItemById),
+                new { id = createdItem.Id },
+                ApiResponse<ItemDto>.Ok(createdItem, "Item created successfully")
+            );
         }
+
 
         /// <summary>
         /// Update existing item
