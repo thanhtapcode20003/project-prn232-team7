@@ -16,8 +16,6 @@ namespace BusinessObjectLayer.DTOs.Item
         [Required(ErrorMessage = "Category is required")]
         public Guid CategoryId { get; set; }
 
-        [StringLength(50, ErrorMessage = "Status cannot exceed 50 characters")]
-        public string? Status { get; set; }
 
 
         public string? FoundLocation { get; set; }

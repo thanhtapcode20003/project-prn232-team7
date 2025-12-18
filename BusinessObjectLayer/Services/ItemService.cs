@@ -1,4 +1,5 @@
 ﻿using BusinessObjectLayer.DTOs.Item;
+using BusinessObjectLayer.Enum;
 using BusinessObjectLayer.Exceptions;
 using BusinessObjectLayer.IService;
 using DataAccessLayer.DbContxts;
@@ -19,7 +20,7 @@ namespace BusinessObjectLayer.Services
         private readonly LostAndFoundDbContext _context;
         private const string UploadFolder = "uploads";
         private const long MaxFileSize = 10 * 1024 * 1024; // 10MB
-        private readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".pdf", ".doc", ".docx" };
+        private readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png" };
         public ItemService()
         {
             _itemRepository = new ItemRepository();
@@ -45,51 +46,52 @@ namespace BusinessObjectLayer.Services
             return item == null ? null : MapToDto(item);
         }
 
-        public async Task<ItemDto> CreateItemAsync(CreateItemDto createItemDto)
+        public async Task<ItemDto> CreateItemAsync(CreateItemDto createItemDto, IFormFile file)
         {
-            // 1. Check login
+
             var user = GetCurrentUser();
 
-            // 2. Validate file
-            if (createItemDto.File == null || createItemDto.File.Length == 0)
-            {
-                throw new BadHttpRequestException("Image file is required");
-            }
+            ValidateFile(file);
 
-            // 3. Prepare upload folder
-            var uploadsPath = Path.Combine(
-                _environment.WebRootPath ?? _environment.ContentRootPath,
-                UploadFolder
-            );
-
+            // Create uploads directory if it doesn't exist
+            var uploadsPath = Path.Combine(_environment.WebRootPath ?? _environment.ContentRootPath, UploadFolder);
             if (!Directory.Exists(uploadsPath))
             {
                 Directory.CreateDirectory(uploadsPath);
             }
-
-            // 4. Generate unique file name
-            var fileExtension = Path.GetExtension(createItemDto.File.FileName);
+            var fileExtension = Path.GetExtension(file.FileName);
             var fileName = $"{Guid.NewGuid()}{fileExtension}";
             var filePath = Path.Combine(uploadsPath, fileName);
 
-            // 5. Save file
+            // Save file
             using (var stream = new FileStream(filePath, FileMode.Create))
             {
-                await createItemDto.File.CopyToAsync(stream);
+                await file.CopyToAsync(stream);
             }
 
-            // 6. Create item entity
+            // Generate file URL
+            var fileUrl = $"/{UploadFolder}/{fileName}";
+            var checkCate = await _context.Categories.FindAsync(createItemDto.CategoryId);
+            if (checkCate == null)
+            {
+                throw new NotFoundException("CategoryId not found");
+            }
+            var checkLocation = await _context.ServiceLocations.FindAsync(createItemDto.CurrentLocationId);
+            if (checkLocation == null)
+            {
+                throw new NotFoundException("CurrentLocationId not found");
+            }
             var item = new Item
             {
                 Id = Guid.NewGuid(),
                 Name = createItemDto.Name,
                 Description = createItemDto.Description,
                 Img = fileName, // ✅ lưu path hoặc filename
-                CategoryId = createItemDto.CategoryId,
-                Status = createItemDto.Status ?? "found",
+                CategoryId = checkCate.Id,
+                Status = StatusEnum.ACTIVE.ToString(),
                 Date = DateTime.UtcNow,
                 FoundLocation = createItemDto.FoundLocation,
-                CurrentLocationId = createItemDto.CurrentLocationId,
+                CurrentLocationId = checkLocation.Id,
                 Context = createItemDto.Context,
                 UserId = user.Id,
                 FoundDate = createItemDto.FoundDate
@@ -117,7 +119,7 @@ namespace BusinessObjectLayer.Services
             existingItem.Description = updateItemDto.Description;
             existingItem.Img = updateItemDto.Img;
             existingItem.CategoryId = updateItemDto.CategoryId;
-            existingItem.Status = updateItemDto.Status;
+
             existingItem.FoundLocation = updateItemDto.FoundLocation;
             existingItem.CurrentLocationId = updateItemDto.CurrentLocationId;
             existingItem.Context = updateItemDto.Context;
@@ -147,8 +149,7 @@ namespace BusinessObjectLayer.Services
         public async Task<PagedResult<ItemDto>> SearchItemsAsync(ItemFilterDto filter)
         {
             var items = await _itemRepository.SearchItemsAsync(
-                status: filter.Status,
-                userId: filter.UserId,
+
                 categoryId: filter.CategoryId,
                 locationId: filter.LocationId,
                 searchTerm: filter.SearchTerm,
@@ -159,8 +160,7 @@ namespace BusinessObjectLayer.Services
             );
 
             var totalCount = await _itemRepository.CountItemsAsync(
-                status: filter.Status,
-                userId: filter.UserId,
+
                 categoryId: filter.CategoryId,
                 locationId: filter.LocationId,
                 searchTerm: filter.SearchTerm,

@@ -1,4 +1,5 @@
 ﻿using BusinessObjectLayer.DTOs.Item;
+using Microsoft.AspNetCore.Http;
 
 namespace BusinessObjectLayer.IService
 {
@@ -6,7 +7,7 @@ namespace BusinessObjectLayer.IService
     {
         Task<List<ItemDto>> GetAllItemsAsync();
         Task<ItemDto?> GetItemByIdAsync(Guid id);
-        Task<ItemDto> CreateItemAsync(CreateItemDto createItemDto);
+        Task<ItemDto> CreateItemAsync(CreateItemDto createItemDto, IFormFile file);
         Task<ItemDto?> UpdateItemAsync(Guid id, UpdateItemDto updateItemDto);
         Task<bool> DeleteItemAsync(Guid id);
 
