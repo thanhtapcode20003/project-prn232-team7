@@ -2,6 +2,8 @@
 using BusinessObjectLayer.Exceptions;
 using BusinessObjectLayer.IService;
 using DataAccessLayer.Models;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Repository;
 
 namespace BusinessObjectLayer.Services
@@ -10,16 +12,20 @@ namespace BusinessObjectLayer.Services
     {
         private readonly ItemRepository _itemRepository;
         private readonly AuthService _authService;
-
+        private readonly IWebHostEnvironment _environment;
+        private const string UploadFolder = "uploads";
+        private const long MaxFileSize = 10 * 1024 * 1024; // 10MB
+        private readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".pdf", ".doc", ".docx" };
         public ItemService()
         {
             _itemRepository = new ItemRepository();
         }
 
-        public ItemService(ItemRepository itemRepository, AuthService authService)
+        public ItemService(ItemRepository itemRepository, AuthService authService, IWebHostEnvironment webHostEnvironment)
         {
             _itemRepository = itemRepository;
             _authService = authService;
+            _environment = webHostEnvironment;
         }
 
         public async Task<List<ItemDto>> GetAllItemsAsync()
@@ -36,19 +42,50 @@ namespace BusinessObjectLayer.Services
 
         public async Task<ItemDto> CreateItemAsync(CreateItemDto createItemDto)
         {
+            // 1. Check login
             var user = _authService.GetCurrentUser();
             if (user == null)
             {
-                throw new UnauthorizedException("user not login");
+                throw new UnauthorizedException("User is not logged in");
             }
+
+            // 2. Validate file
+            if (createItemDto.File == null || createItemDto.File.Length == 0)
+            {
+                throw new BadHttpRequestException("Image file is required");
+            }
+
+            // 3. Prepare upload folder
+            var uploadsPath = Path.Combine(
+                _environment.WebRootPath ?? _environment.ContentRootPath,
+                UploadFolder
+            );
+
+            if (!Directory.Exists(uploadsPath))
+            {
+                Directory.CreateDirectory(uploadsPath);
+            }
+
+            // 4. Generate unique file name
+            var fileExtension = Path.GetExtension(createItemDto.File.FileName);
+            var fileName = $"{Guid.NewGuid()}{fileExtension}";
+            var filePath = Path.Combine(uploadsPath, fileName);
+
+            // 5. Save file
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await createItemDto.File.CopyToAsync(stream);
+            }
+
+            // 6. Create item entity
             var item = new Item
             {
                 Id = Guid.NewGuid(),
                 Name = createItemDto.Name,
                 Description = createItemDto.Description,
-                Img = createItemDto.Img,
+                Img = fileName, // ✅ lưu path hoặc filename
                 CategoryId = createItemDto.CategoryId,
-                Status = createItemDto.Status,
+                Status = createItemDto.Status ?? "found",
                 Date = DateTime.UtcNow,
                 FoundLocation = createItemDto.FoundLocation,
                 CurrentLocationId = createItemDto.CurrentLocationId,
@@ -57,8 +94,11 @@ namespace BusinessObjectLayer.Services
                 FoundDate = createItemDto.FoundDate
             };
 
+            // 7. Save DB
             await _itemRepository.CreateAsync(item);
+
             var createdItem = await _itemRepository.GetByIdWithDetailsAsync(item.Id);
+
             return MapToDto(createdItem!);
         }
 
@@ -145,6 +185,24 @@ namespace BusinessObjectLayer.Services
         }
 
         // ✅ Single MapToDto method
+        private void ValidateFile(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+            {
+                throw new ArgumentException("File is required and cannot be empty");
+            }
+
+            if (file.Length > MaxFileSize)
+            {
+                throw new ArgumentException($"File size exceeds the maximum allowed size of {MaxFileSize / (1024 * 1024)}MB");
+            }
+
+            var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!AllowedExtensions.Contains(fileExtension))
+            {
+                throw new ArgumentException($"File type not allowed. Allowed types: {string.Join(", ", AllowedExtensions)}");
+            }
+        }
         private ItemDto MapToDto(Item item)
         {
             return new ItemDto
