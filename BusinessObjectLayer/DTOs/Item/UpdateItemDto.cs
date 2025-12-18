@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace BusinessObjectLayer.DTOs.Item
 {
@@ -24,7 +19,6 @@ namespace BusinessObjectLayer.DTOs.Item
         [StringLength(50, ErrorMessage = "Status cannot exceed 50 characters")]
         public string? Status { get; set; }
 
-        public DateTime? Date { get; set; }
 
         public string? FoundLocation { get; set; }
 
@@ -32,8 +26,6 @@ namespace BusinessObjectLayer.DTOs.Item
 
         public string? Context { get; set; }
 
-        [Required(ErrorMessage = "User is required")]
-        public Guid UserId { get; set; }
 
         public DateTime? FoundDate { get; set; }
     }
