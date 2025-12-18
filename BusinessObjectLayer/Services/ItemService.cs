@@ -1,18 +1,22 @@
 ﻿using BusinessObjectLayer.DTOs.Item;
 using BusinessObjectLayer.Exceptions;
 using BusinessObjectLayer.IService;
+using DataAccessLayer.DbContxts;
 using DataAccessLayer.Models;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Repository;
+using System.Security.Claims;
 
 namespace BusinessObjectLayer.Services
 {
     public class ItemService : IItemService
     {
         private readonly ItemRepository _itemRepository;
-        private readonly AuthService _authService;
         private readonly IWebHostEnvironment _environment;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly LostAndFoundDbContext _context;
         private const string UploadFolder = "uploads";
         private const long MaxFileSize = 10 * 1024 * 1024; // 10MB
         private readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".pdf", ".doc", ".docx" };
@@ -21,11 +25,12 @@ namespace BusinessObjectLayer.Services
             _itemRepository = new ItemRepository();
         }
 
-        public ItemService(ItemRepository itemRepository, AuthService authService, IWebHostEnvironment webHostEnvironment)
+        public ItemService(ItemRepository itemRepository, IWebHostEnvironment webHostEnvironment, IHttpContextAccessor httpContextAccessor, LostAndFoundDbContext lostAndFoundDbContext)
         {
             _itemRepository = itemRepository;
-            _authService = authService;
             _environment = webHostEnvironment;
+            _httpContextAccessor = httpContextAccessor;
+            _context = lostAndFoundDbContext;
         }
 
         public async Task<List<ItemDto>> GetAllItemsAsync()
@@ -43,11 +48,7 @@ namespace BusinessObjectLayer.Services
         public async Task<ItemDto> CreateItemAsync(CreateItemDto createItemDto)
         {
             // 1. Check login
-            var user = _authService.GetCurrentUser();
-            if (user == null)
-            {
-                throw new UnauthorizedException("User is not logged in");
-            }
+            var user = GetCurrentUser();
 
             // 2. Validate file
             if (createItemDto.File == null || createItemDto.File.Length == 0)
@@ -107,11 +108,7 @@ namespace BusinessObjectLayer.Services
             var existingItem = await _itemRepository.GetByIdAsync(id);
             if (existingItem == null)
                 return null;
-            var user = _authService.GetCurrentUser();
-            if (user == null)
-            {
-                throw new UnauthorizedException("user not login");
-            }
+            var user = GetCurrentUser();
             if (!user.Equals(existingItem.User))
             {
                 throw new UnauthorizedException("it not of you");
@@ -134,11 +131,7 @@ namespace BusinessObjectLayer.Services
         public async Task<bool> DeleteItemAsync(Guid id)
         {
             var item = await _itemRepository.GetByIdAsync(id);
-            var user = _authService.GetCurrentUser();
-            if (user == null)
-            {
-                throw new UnauthorizedException("user not login");
-            }
+            var user = GetCurrentUser();
             if (!user.Equals(item.User))
             {
                 throw new UnauthorizedException("it not of you");
@@ -223,6 +216,25 @@ namespace BusinessObjectLayer.Services
                 CurrentLocationName = item.CurrentLocation?.Name,
                 UserName = item.User?.Username
             };
+        }
+        public User GetCurrentUser()
+        {
+            var userIdClaim = _httpContextAccessor.HttpContext?.User
+                  .FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim))
+            {
+                throw new UnauthorizedException("User not authenticated");
+            }
+            var userId = Guid.Parse(userIdClaim);
+            var user = _context.Users
+                .Include(u => u.Role)
+                .FirstOrDefault(u => u.Id == userId);
+            if (user == null)
+            {
+                throw new UnauthorizedException("User not found");
+            }
+            return user;
         }
     }
 }
