@@ -19,7 +19,7 @@ namespace Repository
             return await _context.ReturnRecords
                 .Include(r => r.Item)
                 .Include(r => r.Staff)
-                .Include(r => r.User)
+
                 .FirstOrDefaultAsync(r => r.Id == id);
         }
 
@@ -28,7 +28,7 @@ namespace Repository
             return await _context.ReturnRecords
                 .Include(r => r.Item)
                 .Include(r => r.Staff)
-                .Include(r => r.User)
+
                 .ToListAsync();
         }
 
@@ -45,14 +45,13 @@ namespace Repository
             var query = _context.ReturnRecords
                 .Include(r => r.Item)
                 .Include(r => r.Staff)
-                .Include(r => r.User)
+
                 .AsQueryable();
 
             if (!string.IsNullOrEmpty(status))
                 query = query.Where(r => r.Status == status);
 
-            if (userId.HasValue)
-                query = query.Where(r => r.UserId == userId.Value);
+
 
             if (staffId.HasValue)
                 query = query.Where(r => r.StaffId == staffId.Value);
@@ -87,8 +86,7 @@ namespace Repository
             if (!string.IsNullOrEmpty(status))
                 query = query.Where(r => r.Status == status);
 
-            if (userId.HasValue)
-                query = query.Where(r => r.UserId == userId.Value);
+
 
             if (staffId.HasValue)
                 query = query.Where(r => r.StaffId == staffId.Value);
