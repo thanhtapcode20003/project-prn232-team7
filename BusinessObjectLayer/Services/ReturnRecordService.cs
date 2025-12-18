@@ -46,10 +46,9 @@ namespace BusinessObjectLayer.Services
         public async Task<PagedResult<ReturnRecordDto>> SearchAsync(ReturnRecordFilterDto filter)
         {
             var records = await _returnRecordRepository.SearchAsync(
-                status: filter.Status,
-                userId: filter.UserId,
-                staffId: filter.StaffId,
-                itemId: filter.ItemId,
+                status: StatusEnum.ACTIVE.ToString(),
+
+                itemName: filter.NameItem,
                 fromDate: filter.FromDate,
                 toDate: filter.ToDate,
                 pageNumber: filter.PageNumber,
@@ -57,10 +56,7 @@ namespace BusinessObjectLayer.Services
             );
 
             var totalCount = await _returnRecordRepository.CountAsync(
-                status: filter.Status,
-                userId: filter.UserId,
-                staffId: filter.StaffId,
-                itemId: filter.ItemId,
+                itemName: filter.NameItem,
                 fromDate: filter.FromDate,
                 toDate: filter.ToDate
             );
@@ -176,10 +172,7 @@ namespace BusinessObjectLayer.Services
             }
 
             record.VerifyNotes = dto.VerifyNotes ?? record.VerifyNotes;
-            if (!string.IsNullOrEmpty(dto.Status))
-            {
-                record.Status = dto.Status;
-            }
+
             record.DateUpdate = DateTime.UtcNow;
 
             await _returnRecordRepository.UpdateAsync(record);

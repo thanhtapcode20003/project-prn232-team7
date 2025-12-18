@@ -1,4 +1,3 @@
-using System;
 using Microsoft.AspNetCore.Http;
 
 namespace BusinessObjectLayer.DTOs.ReturnRecord
@@ -12,6 +11,6 @@ namespace BusinessObjectLayer.DTOs.ReturnRecord
         public IFormFile? ConfirmImg { get; set; }
 
         public string? VerifyNotes { get; set; }
-        public string? Status { get; set; }
+
     }
 }

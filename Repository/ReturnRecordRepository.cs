@@ -34,9 +34,7 @@ namespace Repository
 
         public async Task<List<ReturnRecord>> SearchAsync(
             string? status = null,
-            Guid? userId = null,
-            Guid? staffId = null,
-            Guid? itemId = null,
+            string? itemName = null,
             DateTime? fromDate = null,
             DateTime? toDate = null,
             int pageNumber = 1,
@@ -44,8 +42,6 @@ namespace Repository
         {
             var query = _context.ReturnRecords
                 .Include(r => r.Item)
-                .Include(r => r.Staff)
-
                 .AsQueryable();
 
             if (!string.IsNullOrEmpty(status))
@@ -53,11 +49,14 @@ namespace Repository
 
 
 
-            if (staffId.HasValue)
-                query = query.Where(r => r.StaffId == staffId.Value);
 
-            if (itemId.HasValue)
-                query = query.Where(r => r.ItemId == itemId.Value);
+
+            if (!string.IsNullOrWhiteSpace(itemName))
+            {
+                query = query.Where(r =>
+                    r.Item != null &&
+                    r.Item.Name.Contains(itemName));
+            }
 
             if (fromDate.HasValue)
                 query = query.Where(r => r.DateCreated >= fromDate.Value);
@@ -75,9 +74,7 @@ namespace Repository
 
         public async Task<int> CountAsync(
             string? status = null,
-            Guid? userId = null,
-            Guid? staffId = null,
-            Guid? itemId = null,
+            string? itemName = null,
             DateTime? fromDate = null,
             DateTime? toDate = null)
         {
@@ -88,11 +85,12 @@ namespace Repository
 
 
 
-            if (staffId.HasValue)
-                query = query.Where(r => r.StaffId == staffId.Value);
-
-            if (itemId.HasValue)
-                query = query.Where(r => r.ItemId == itemId.Value);
+            if (!string.IsNullOrWhiteSpace(itemName))
+            {
+                query = query.Where(r =>
+                    r.Item != null &&
+                    r.Item.Name.Contains(itemName));
+            }
 
             if (fromDate.HasValue)
                 query = query.Where(r => r.DateCreated >= fromDate.Value);

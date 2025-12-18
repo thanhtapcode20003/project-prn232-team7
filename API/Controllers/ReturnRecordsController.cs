@@ -23,10 +23,7 @@ namespace API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<BusinessObjectLayer.IService.PagedResult<ReturnRecordDto>>> GetReturnRecords(
-            [FromQuery] string? status = null,
-            [FromQuery] Guid? userId = null,
-            [FromQuery] Guid? staffId = null,
-            [FromQuery] Guid? itemId = null,
+            [FromQuery] string? itemName = null,
             [FromQuery] DateTime? fromDate = null,
             [FromQuery] DateTime? toDate = null,
             [FromQuery] int pageNumber = 1,
@@ -36,10 +33,7 @@ namespace API.Controllers
             {
                 var filter = new ReturnRecordFilterDto
                 {
-                    Status = status,
-                    UserId = userId,
-                    StaffId = staffId,
-                    ItemId = itemId,
+                    NameItem = itemName,
                     FromDate = fromDate,
                     ToDate = toDate,
                     PageNumber = pageNumber,
