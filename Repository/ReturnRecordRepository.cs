@@ -18,8 +18,8 @@ namespace Repository
         {
             return await _context.ReturnRecords
                 .Include(r => r.Item)
+                    .ThenInclude(i => i.User)
                 .Include(r => r.Staff)
-
                 .FirstOrDefaultAsync(r => r.Id == id);
         }
 
@@ -27,13 +27,16 @@ namespace Repository
         {
             return await _context.ReturnRecords
                 .Include(r => r.Item)
+                    .ThenInclude(i => i.User)
                 .Include(r => r.Staff)
-
                 .ToListAsync();
         }
 
         public async Task<List<ReturnRecord>> SearchAsync(
             string? status = null,
+            Guid? userId = null,
+            Guid? staffId = null,
+            Guid? itemId = null,
             string? itemName = null,
             DateTime? fromDate = null,
             DateTime? toDate = null,
@@ -42,14 +45,21 @@ namespace Repository
         {
             var query = _context.ReturnRecords
                 .Include(r => r.Item)
+                    .ThenInclude(i => i.User)
+                .Include(r => r.Staff)
                 .AsQueryable();
 
             if (!string.IsNullOrEmpty(status))
                 query = query.Where(r => r.Status == status);
 
+            if (userId.HasValue)
+                query = query.Where(r => r.Item.UserId == userId.Value);
 
+            if (staffId.HasValue)
+                query = query.Where(r => r.StaffId == staffId.Value);
 
-
+            if (itemId.HasValue)
+                query = query.Where(r => r.ItemId == itemId.Value);
 
             if (!string.IsNullOrWhiteSpace(itemName))
             {
@@ -74,16 +84,28 @@ namespace Repository
 
         public async Task<int> CountAsync(
             string? status = null,
+            Guid? userId = null,
+            Guid? staffId = null,
+            Guid? itemId = null,
             string? itemName = null,
             DateTime? fromDate = null,
             DateTime? toDate = null)
         {
-            var query = _context.ReturnRecords.AsQueryable();
+            var query = _context.ReturnRecords
+                .Include(r => r.Item)
+                .AsQueryable();
 
             if (!string.IsNullOrEmpty(status))
                 query = query.Where(r => r.Status == status);
 
+            if (userId.HasValue)
+                query = query.Where(r => r.Item.UserId == userId.Value);
 
+            if (staffId.HasValue)
+                query = query.Where(r => r.StaffId == staffId.Value);
+
+            if (itemId.HasValue)
+                query = query.Where(r => r.ItemId == itemId.Value);
 
             if (!string.IsNullOrWhiteSpace(itemName))
             {

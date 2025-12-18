@@ -1,5 +1,6 @@
 using BusinessObjectLayer.DTOs.ReturnRecord;
 using BusinessObjectLayer.Enum;
+using BusinessObjectLayer.Exceptions;
 using BusinessObjectLayer.IService;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -22,8 +23,11 @@ namespace API.Controllers
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<BusinessObjectLayer.IService.PagedResult<ReturnRecordDto>>> GetReturnRecords(
-            [FromQuery] string? itemName = null,
+        public async Task<ActionResult<ApiResponse<BusinessObjectLayer.IService.PagedResult<ReturnRecordDto>>>> GetReturnRecords(
+            [FromQuery] string? status = null,
+            [FromQuery] Guid? userId = null,
+            [FromQuery] Guid? staffId = null,
+            [FromQuery] Guid? itemId = null,
             [FromQuery] DateTime? fromDate = null,
             [FromQuery] DateTime? toDate = null,
             [FromQuery] int pageNumber = 1,
@@ -33,7 +37,10 @@ namespace API.Controllers
             {
                 var filter = new ReturnRecordFilterDto
                 {
-                    NameItem = itemName,
+                    Status = status,
+                    UserId = userId,
+                    StaffId = staffId,
+                    ItemId = itemId,
                     FromDate = fromDate,
                     ToDate = toDate,
                     PageNumber = pageNumber,
@@ -41,7 +48,7 @@ namespace API.Controllers
                 };
 
                 var result = await _returnRecordService.SearchAsync(filter);
-                return Ok(result);
+                return Ok(ApiResponse<BusinessObjectLayer.IService.PagedResult<ReturnRecordDto>>.Ok(result, "Return records retrieved successfully"));
             }
             catch (Exception ex)
             {
@@ -53,7 +60,7 @@ namespace API.Controllers
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<ReturnRecordDto>> GetById(Guid id)
+        public async Task<ActionResult<ApiResponse<ReturnRecordDto>>> GetById(Guid id)
         {
             try
             {
@@ -61,7 +68,7 @@ namespace API.Controllers
                 if (record == null)
                     return NotFound(new { message = $"Return record with ID {id} not found" });
 
-                return Ok(record);
+                return Ok(ApiResponse<ReturnRecordDto>.Ok(record, "Return record retrieved successfully"));
             }
             catch (Exception ex)
             {
@@ -73,9 +80,9 @@ namespace API.Controllers
         [HttpPost]
         [Consumes("multipart/form-data")]
         [Authorize(Roles = nameof(RoleEnum.Admin) + "," + nameof(RoleEnum.Staff))]
-        [ProducesResponseType(StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<ReturnRecordDto>> Create([FromForm] CreateReturnRecordDto dto)
+        [ProducesResponseType(typeof(ApiResponse<ReturnRecordDto>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<ApiResponse<ReturnRecordDto>>> Create([FromForm] CreateReturnRecordDto dto)
         {
             try
             {
@@ -83,7 +90,11 @@ namespace API.Controllers
                     return BadRequest(ModelState);
 
                 var created = await _returnRecordService.CreateAsync(dto);
-                return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+                return CreatedAtAction(
+                    nameof(GetById),
+                    new { id = created.Id },
+                    ApiResponse<ReturnRecordDto>.Ok(created, "Return record created successfully")
+                );
             }
             catch (Exception ex)
             {
@@ -97,7 +108,7 @@ namespace API.Controllers
         [Authorize(Roles = nameof(RoleEnum.Admin) + "," + nameof(RoleEnum.Staff))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<ReturnRecordDto>> Update(Guid id, [FromForm] UpdateReturnRecordDto dto)
+        public async Task<ActionResult<ApiResponse<ReturnRecordDto>>> Update(Guid id, [FromForm] UpdateReturnRecordDto dto)
         {
             try
             {
@@ -108,7 +119,7 @@ namespace API.Controllers
                 if (updated == null)
                     return NotFound(new { message = $"Return record with ID {id} not found" });
 
-                return Ok(updated);
+                return Ok(ApiResponse<ReturnRecordDto>.Ok(updated, "Return record updated successfully"));
             }
             catch (Exception ex)
             {
