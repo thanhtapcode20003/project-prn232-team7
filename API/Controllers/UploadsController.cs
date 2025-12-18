@@ -19,6 +19,9 @@ namespace API.Controllers
             _logger = logger;
         }
 
+        /// <summary>
+        /// GET /api/uploads - Get all uploads with filters
+        /// </summary>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -60,24 +63,19 @@ namespace API.Controllers
             }
         }
 
+        /// <summary>
+        /// GET /api/uploads/{id} - Get upload by ID
+        /// </summary>
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<UploadDto>> GetUploadById(Guid id)
         {
-            try
-            {
-                var upload = await _uploadService.GetUploadByIdAsync(id);
-                if (upload == null)
-                    return NotFound(new { message = $"Upload with ID {id} not found" });
+            var upload = await _uploadService.GetUploadByIdAsync(id);
+            if (upload == null)
+                return NotFound(new { message = $"Upload with ID {id} not found" });
 
-                return Ok(upload);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting upload {UploadId}", id);
-                return StatusCode(500, new { message = "An error occurred" });
-            }
+            return Ok(upload);
         }
 
         /// <summary>
@@ -86,97 +84,68 @@ namespace API.Controllers
         /// </summary>
         [HttpGet("category/{categoryId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<List<UploadDto>>> GetUploadsByCategoryId(Guid categoryId)
         {
-            try
-            {
-                var uploads = await _uploadService.GetUploadsByCategoryIdAsync(categoryId);
-                return Ok(uploads);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting uploads for category {CategoryId}", categoryId);
-                return StatusCode(500, new { message = "An error occurred" });
-            }
+            var uploads = await _uploadService.GetUploadsByCategoryIdAsync(categoryId);
+            return Ok(uploads);
         }
 
+        /// <summary>
+        /// POST /api/uploads - Upload new file
+        /// </summary>
         [HttpPost]
         [Consumes("multipart/form-data")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<UploadDto>> UploadFile([FromForm] CreateUploadDto createUploadDto, IFormFile file)
         {
-            try
+            if (file == null || file.Length == 0)
             {
-                if (file == null || file.Length == 0)
-                {
-                    return BadRequest(new { message = "File is required" });
-                }
+                return BadRequest(new { message = "File is required" });
+            }
 
-                var upload = await _uploadService.UploadFileAsync(createUploadDto, file);
+            var upload = await _uploadService.UploadFileAsync(createUploadDto, file);
 
-                return CreatedAtAction(nameof(GetUploadById), new { id = upload.Id }, upload);
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(ex, "Invalid file upload request");
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogWarning(ex, "Invalid operation: {Message}", ex.Message);
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error uploading file");
-                return StatusCode(500, new { message = "An error occurred while uploading the file" });
-            }
+            return CreatedAtAction(nameof(GetUploadById), new { id = upload.Id }, upload);
         }
 
+        /// <summary>
+        /// PUT /api/uploads/{id} - Update existing upload
+        /// </summary>
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<UploadDto>> UpdateUpload(Guid id, [FromBody] UpdateUploadDto updateUploadDto)
         {
-            try
-            {
-                if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-                var updatedUpload = await _uploadService.UpdateUploadAsync(id, updateUploadDto);
-                if (updatedUpload == null)
-                    return NotFound(new { message = $"Upload with ID {id} not found" });
+            var updatedUpload = await _uploadService.UpdateUploadAsync(id, updateUploadDto);
+            if (updatedUpload == null)
+                return NotFound(new { message = $"Upload with ID {id} not found" });
 
-                return Ok(updatedUpload);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating upload {UploadId}", id);
-                return StatusCode(500, new { message = "An error occurred" });
-            }
+            return Ok(updatedUpload);
         }
 
+        /// <summary>
+        /// DELETE /api/uploads/{id} - Delete upload
+        /// </summary>
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> DeleteUpload(Guid id)
         {
-            try
-            {
-                var result = await _uploadService.DeleteUploadAsync(id);
-                if (!result)
-                    return NotFound(new { message = $"Upload with ID {id} not found" });
+            var result = await _uploadService.DeleteUploadAsync(id);
+            if (!result)
+                return NotFound(new { message = $"Upload with ID {id} not found" });
 
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error deleting upload {UploadId}", id);
-                return StatusCode(500, new { message = "An error occurred" });
-            }
+            return NoContent();
         }
 
         /// <summary>
@@ -187,30 +156,24 @@ namespace API.Controllers
         [Authorize(Roles = nameof(RoleEnum.Admin) + "," + nameof(RoleEnum.Staff))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> UpsertNotification(
             [FromRoute] Guid id,
             [FromBody] SendNotificationDTO send)
         {
-            try
+            // Try to update first, if not exists then create
+            var result = await _uploadService.UpdateSendNotificationUpload(id, send);
+            
+            if (result == null)
             {
-                // Try to update first, if not exists then create
-                var result = await _uploadService.UpdateSendNotificationUpload(id, send);
-                
-                if (result == null)
-                {
-                    // If update returns null, try to create
-                    result = await _uploadService.SendNotificationUpload(id, send);
-                }
-
-                if (result == null)
-                    return NotFound(new { message = "Upload not found" });
-
-                return Ok(result);
+                // If update returns null, try to create
+                result = await _uploadService.SendNotificationUpload(id, send);
             }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+
+            if (result == null)
+                return NotFound(new { message = "Upload not found" });
+
+            return Ok(result);
         }
 
         /// <summary>
@@ -220,23 +183,17 @@ namespace API.Controllers
         [Authorize(Roles = nameof(RoleEnum.Admin) + "," + nameof(RoleEnum.Staff))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> PatchNotification(
             [FromRoute] Guid id,
             [FromBody] SendNotificationDTO send)
         {
-            try
-            {
-                var result = await _uploadService.UpdateSendNotificationUpload(id, send);
+            var result = await _uploadService.UpdateSendNotificationUpload(id, send);
 
-                if (result == null)
-                    return NotFound(new { message = "Upload not found" });
+            if (result == null)
+                return NotFound(new { message = "Upload not found" });
 
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            return Ok(result);
         }
     }
 }

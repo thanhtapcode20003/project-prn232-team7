@@ -15,6 +15,7 @@ namespace BusinessObjectLayer.Services
         private readonly IAuthService _authService;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ICampusService _campusService;
+        private readonly ICategoriesService _categoriesService;
         private readonly IWebHostEnvironment _environment;
         private const string UploadFolder = "uploads";
         private const long MaxFileSize = 10 * 1024 * 1024; // 10MB
@@ -25,13 +26,15 @@ namespace BusinessObjectLayer.Services
             IWebHostEnvironment environment,
             IAuthService authService,
             IHttpContextAccessor httpContextAccessor,
-            ICampusService campusService)
+            ICampusService campusService,
+            ICategoriesService categoriesService)
         {
             _uploadRepository = uploadRepository;
             _environment = environment;
             _authService = authService;
             _httpContextAccessor = httpContextAccessor;
             _campusService = campusService;
+            _categoriesService = categoriesService;
         }
 
         public async Task<List<UploadDto>> GetAllUploadsAsync()
@@ -91,22 +94,41 @@ namespace BusinessObjectLayer.Services
         {
             // Validate file
             ValidateFile(file);
+            
+            // Validate user authentication
             var user = _authService.GetCurrentUser();
             if (user == null)
             {
-                throw new UnauthorizedException("not login");
+                throw new UnauthorizedException("User not authenticated");
             }
+
+            // Validate CategoryId exists
+            var category = await _categoriesService.GetCateById(createUploadDto.CategoryId);
+            if (category == null)
+            {
+                throw new NotFoundException("Category", createUploadDto.CategoryId.ToString());
+            }
+            
+            // Check if category is active
+            if (category.Status != "ACTIVE")
+            {
+                throw new NotFoundException("Category", createUploadDto.CategoryId.ToString());
+            }
+
+            // Validate CampusId exists
+            var campus = await _campusService.GetCampusById(createUploadDto.CampusId);
+            if (campus == null)
+            {
+                throw new NotFoundException("Campus", createUploadDto.CampusId.ToString());
+            }
+
             // Create uploads directory if it doesn't exist
             var uploadsPath = Path.Combine(_environment.WebRootPath ?? _environment.ContentRootPath, UploadFolder);
             if (!Directory.Exists(uploadsPath))
             {
                 Directory.CreateDirectory(uploadsPath);
             }
-            var campus = await _campusService.GetCampusById(createUploadDto.CampusId);
-            if (campus == null)
-            {
-                throw new NotFoundException("not found campus with id", createUploadDto.CampusId.ToString());
-            }
+
             // Generate unique filename
             var fileExtension = Path.GetExtension(file.FileName);
             var fileName = $"{Guid.NewGuid()}{fileExtension}";
@@ -122,7 +144,6 @@ namespace BusinessObjectLayer.Services
             var fileUrl = $"/{UploadFolder}/{fileName}";
 
             // Create upload record
-
             var upload = new Upload
             {
                 Id = Guid.NewGuid(),
@@ -136,9 +157,6 @@ namespace BusinessObjectLayer.Services
                 CampusId = campus.CampusId,
                 Content = createUploadDto.Content,
                 Status = createUploadDto.Status,
-                //Staffid = createUploadDto.Staffid,     
-                //Type = createUploadDto.Type,
-                //Note = createUploadDto.Note,
                 DateCreate = DateTime.UtcNow,
                 DateUpdate = DateTime.UtcNow
             };
@@ -153,11 +171,27 @@ namespace BusinessObjectLayer.Services
             var existingUpload = await _uploadRepository.GetByIdAsync(uploadId);
             if (existingUpload == null)
                 return null;
+
+            // Validate CategoryId if changed
+            var category = await _categoriesService.GetCateById(updateUploadDto.CategoryId);
+            if (category == null)
+            {
+                throw new NotFoundException("Category", updateUploadDto.CategoryId.ToString());
+            }
+            
+            // Check if category is active
+            if (category.Status != "ACTIVE")
+            {
+                throw new NotFoundException("Category", updateUploadDto.CategoryId.ToString());
+            }
+
+            // Validate CampusId if changed
             var campus = await _campusService.GetCampusById(updateUploadDto.CampusId);
             if (campus == null)
             {
-                throw new NotFoundException("not found campus with id", updateUploadDto.CampusId.ToString());
+                throw new NotFoundException("Campus", updateUploadDto.CampusId.ToString());
             }
+
             existingUpload.Name = updateUploadDto.Name;
             existingUpload.Description = updateUploadDto.Description;
             existingUpload.CategoryId = updateUploadDto.CategoryId;
@@ -166,9 +200,6 @@ namespace BusinessObjectLayer.Services
             existingUpload.Content = updateUploadDto.Content;
             existingUpload.CampusId = campus.CampusId;
             existingUpload.Status = updateUploadDto.Status;
-            //existingUpload.Staffid = updateUploadDto.Staffid;
-            //existingUpload.Type = updateUploadDto.Type;
-            //existingUpload.Note = updateUploadDto.Note;
             existingUpload.DateUpdate = DateTime.UtcNow;
 
             await _uploadRepository.UpdateAsync(existingUpload);
@@ -181,17 +212,10 @@ namespace BusinessObjectLayer.Services
             var upload = await _uploadRepository.GetByIdAsync(uploadId);
             if (upload == null)
             {
-                throw new NotFoundException("not found upload with id", uploadId.ToString());
+                throw new NotFoundException("Upload", uploadId.ToString());
             }
 
-            // Delete physical file if exists
-            //if (!string.IsNullOrEmpty(upload.Img))
-            //{
-            //    await DeleteFileAsync(upload.Img);
-            //}
-
-            // Delete database record
-            //await _uploadRepository.RemoveAsync(upload);
+            // Soft delete
             upload.Status = "DELETED";
             await _uploadRepository.UpdateAsync(upload);
             return true;
@@ -254,7 +278,6 @@ namespace BusinessObjectLayer.Services
                 Staffid = upload.Staffid,
                 DateCreate = upload.DateCreate,
                 Userid = upload.Userid,
-                //CampusId = upload.CampusId,
                 Note = upload.Note,
                 DateUpdate = upload.DateUpdate,
                 CategoryName = upload.Category?.Name,
@@ -269,11 +292,11 @@ namespace BusinessObjectLayer.Services
             var user = _authService.GetCurrentUser();
             if (user == null)
             {
-                throw new UnauthorizedException("not login");
+                throw new UnauthorizedException("User not authenticated");
             }
             if (upload == null)
             {
-                throw new NotFoundException("not found upload with id", uploadId.ToString());
+                throw new NotFoundException("Upload", uploadId.ToString());
             }
             upload.Note = sendNotificationDTO.Note;
             upload.NoteCreate = DateTime.UtcNow;
@@ -288,12 +311,12 @@ namespace BusinessObjectLayer.Services
             var upload = await _uploadRepository.GetByIdWithDetailsAsync(uploadId);
             if (upload == null)
             {
-                throw new NotFoundException("not found upload with id", uploadId.ToString());
+                throw new NotFoundException("Upload", uploadId.ToString());
             }
             var user = _authService.GetCurrentUser();
             if (user == null)
             {
-                throw new UnauthorizedException("not login");
+                throw new UnauthorizedException("User not authenticated");
             }
             upload.Note = sendNotificationDTO.Note;
             upload.NoteUpdate = DateTime.UtcNow;
