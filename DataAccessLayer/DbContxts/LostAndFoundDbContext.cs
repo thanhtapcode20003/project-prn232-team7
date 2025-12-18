@@ -1,7 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using DataAccessLayer.Models;
+﻿using DataAccessLayer.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using System;
+using System.Collections.Generic;
 
 namespace DataAccessLayer.DbContxts;
 
@@ -34,13 +35,24 @@ public partial class LostAndFoundDbContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=(local);Database=LostAndFoundDb;User Id=sa;Password=12345;TrustServerCertificate=True");
+         => optionsBuilder.UseSqlServer(GetConnectionString("DefaultConnection")).UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+
+    public static string GetConnectionString(string connectionStringName)
+    {
+        var config = new ConfigurationBuilder()
+            .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+            .AddJsonFile("appsettings.json")
+            .Build();
+
+        string connectionString = config.GetConnectionString(connectionStringName);
+        return connectionString;
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Campus>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__campus__3213E83F138A2398");
+            entity.HasKey(e => e.Id).HasName("PK__campus__3213E83FC5B8B12A");
 
             entity.ToTable("campus", tb => tb.HasTrigger("trg_campus_update"));
 
@@ -64,13 +76,13 @@ public partial class LostAndFoundDbContext : DbContext
                 .HasColumnName("name");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
-                .HasDefaultValue("ACTIVE")
+                .HasDefaultValue("active")
                 .HasColumnName("status");
         });
 
         modelBuilder.Entity<Category>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__categori__3213E83FD871D602");
+            entity.HasKey(e => e.Id).HasName("PK__categori__3213E83F72DFF310");
 
             entity.ToTable("categories", tb => tb.HasTrigger("trg_categories_update"));
 
@@ -91,13 +103,13 @@ public partial class LostAndFoundDbContext : DbContext
                 .HasColumnName("name");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
-                .HasDefaultValue("ACTIVE")
+                .HasDefaultValue("active")
                 .HasColumnName("status");
         });
 
         modelBuilder.Entity<Item>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__item__3213E83F72A91B6C");
+            entity.HasKey(e => e.Id).HasName("PK__item__3213E83F59BCBBE8");
 
             entity.ToTable("item");
 
@@ -126,7 +138,7 @@ public partial class LostAndFoundDbContext : DbContext
                 .HasColumnName("name");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
-                .HasDefaultValue("ACTIVE")
+                .HasDefaultValue("pending")
                 .HasColumnName("status");
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
@@ -146,7 +158,7 @@ public partial class LostAndFoundDbContext : DbContext
 
         modelBuilder.Entity<ReturnRecord>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__return_r__3213E83FA32B5A53");
+            entity.HasKey(e => e.Id).HasName("PK__return_r__3213E83F335F4B12");
 
             entity.ToTable("return_record", tb => tb.HasTrigger("trg_return_record_update"));
 
@@ -177,7 +189,7 @@ public partial class LostAndFoundDbContext : DbContext
             entity.Property(e => e.StaffId).HasColumnName("staff_id");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
-                .HasDefaultValue("ACTIVE")
+                .HasDefaultValue("pending")
                 .HasColumnName("status");
             entity.Property(e => e.UserId).HasColumnName("user_id");
             entity.Property(e => e.VerifyNotes).HasColumnName("verify_notes");
@@ -199,7 +211,7 @@ public partial class LostAndFoundDbContext : DbContext
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__roles__3213E83F292C1C30");
+            entity.HasKey(e => e.Id).HasName("PK__roles__3213E83F8230A75D");
 
             entity.ToTable("roles", tb => tb.HasTrigger("trg_roles_update"));
 
@@ -220,13 +232,13 @@ public partial class LostAndFoundDbContext : DbContext
                 .HasColumnName("name");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
-                .HasDefaultValue("ACTIVE")
+                .HasDefaultValue("active")
                 .HasColumnName("status");
         });
 
         modelBuilder.Entity<ServiceLocation>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__service___3213E83FE75B32F9");
+            entity.HasKey(e => e.Id).HasName("PK__service___3213E83F0CEE7A2B");
 
             entity.ToTable("service_location", tb => tb.HasTrigger("trg_service_location_update"));
 
@@ -251,7 +263,7 @@ public partial class LostAndFoundDbContext : DbContext
                 .HasColumnName("name");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
-                .HasDefaultValue("ACTIVE")
+                .HasDefaultValue("active")
                 .HasColumnName("status");
 
             entity.HasOne(d => d.Campus).WithMany(p => p.ServiceLocations)
@@ -261,7 +273,7 @@ public partial class LostAndFoundDbContext : DbContext
 
         modelBuilder.Entity<Upload>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__upload__3213E83FB79CD4F2");
+            entity.HasKey(e => e.Id).HasName("PK__upload__3213E83FE4392676");
 
             entity.ToTable("upload");
 
@@ -302,7 +314,7 @@ public partial class LostAndFoundDbContext : DbContext
             entity.Property(e => e.Staffid).HasColumnName("staffid");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
-                .HasDefaultValue("ACTIVE")
+                .HasDefaultValue("pending")
                 .HasColumnName("status");
             entity.Property(e => e.Userid).HasColumnName("userid");
 
@@ -326,13 +338,13 @@ public partial class LostAndFoundDbContext : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__user__3213E83F31FF5236");
+            entity.HasKey(e => e.Id).HasName("PK__user__3213E83F5A383ABD");
 
             entity.ToTable("user");
 
-            entity.HasIndex(e => e.Gmail, "UQ__user__493D0C0AE88DBB60").IsUnique();
+            entity.HasIndex(e => e.Gmail, "UQ__user__493D0C0A08566798").IsUnique();
 
-            entity.HasIndex(e => e.Username, "UQ__user__F3DBC57240A437F5").IsUnique();
+            entity.HasIndex(e => e.Username, "UQ__user__F3DBC572864865CC").IsUnique();
 
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("(newid())")
@@ -358,7 +370,7 @@ public partial class LostAndFoundDbContext : DbContext
             entity.Property(e => e.RoleId).HasColumnName("role_id");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
-                .HasDefaultValue("ACTIVE")
+                .HasDefaultValue("active")
                 .HasColumnName("status");
             entity.Property(e => e.Username)
                 .HasMaxLength(100)
