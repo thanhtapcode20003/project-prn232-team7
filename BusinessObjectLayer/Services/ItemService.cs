@@ -148,11 +148,9 @@ namespace BusinessObjectLayer.Services
 
             existingItem.Name = updateItemDto.Name;
             existingItem.Description = updateItemDto.Description;
-            existingItem.Img = updateItemDto.Img;
             existingItem.CategoryId = updateItemDto.CategoryId;
             existingItem.FoundLocation = updateItemDto.FoundLocation;
             existingItem.CurrentLocationId = updateItemDto.CurrentLocationId;
-            existingItem.Context = updateItemDto.Context;
             existingItem.FoundDate = updateItemDto.FoundDate;
 
             await _itemRepository.UpdateAsync(existingItem);
