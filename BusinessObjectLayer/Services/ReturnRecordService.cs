@@ -2,9 +2,11 @@ using BusinessObjectLayer.DTOs.ReturnRecord;
 using BusinessObjectLayer.Enum;
 using BusinessObjectLayer.Exceptions;
 using BusinessObjectLayer.IService;
+using DataAccessLayer.DbContxts;
 using DataAccessLayer.Models;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Repository;
 
 namespace BusinessObjectLayer.Services
@@ -14,6 +16,7 @@ namespace BusinessObjectLayer.Services
         private readonly ReturnRecordRepository _returnRecordRepository;
         private readonly ItemRepository _itemRepository;
         private readonly IAuthService _authService;
+        private readonly LostAndFoundDbContext _context;
         private readonly IWebHostEnvironment _environment;
         private const string UploadFolder = "uploads";
         private const long MaxFileSize = 10 * 1024 * 1024; // 10MB
@@ -23,12 +26,15 @@ namespace BusinessObjectLayer.Services
             ReturnRecordRepository returnRecordRepository,
             ItemRepository itemRepository,
             IAuthService authService,
-            IWebHostEnvironment environment)
+            IWebHostEnvironment environment,
+            LostAndFoundDbContext lostAndFoundDbContext
+            )
         {
             _returnRecordRepository = returnRecordRepository;
             _itemRepository = itemRepository;
             _authService = authService;
             _environment = environment;
+            _context = lostAndFoundDbContext;
         }
 
         public async Task<List<ReturnRecordDto>> GetAllAsync()
@@ -77,15 +83,15 @@ namespace BusinessObjectLayer.Services
         public async Task<ReturnRecordDto> CreateAsync(CreateReturnRecordDto dto)
         {
             var user = _authService.GetCurrentUser();
-            if (user == null)
-            {
-                throw new UnauthorizedException("User not authenticated");
-            }
 
             var item = await _itemRepository.GetByIdAsync(dto.ItemId);
             if (item == null)
             {
                 throw new NotFoundException("Item not found with id", dto.ItemId.ToString());
+            }
+            if (StatusEnum.ACTIVE.ToString() != item.Status)
+            {
+                throw new BadHttpRequestException("item has reurned or delete");
             }
 
             // Lưu file ảnh nếu có
@@ -110,10 +116,35 @@ namespace BusinessObjectLayer.Services
                 DateUpdate = DateTime.UtcNow
             };
 
-            await _returnRecordRepository.CreateAsync(record);
+            await CreateReturnRecordWithTransactionAsync(record, item);
             var created = await _returnRecordRepository.GetByIdWithDetailsAsync(record.Id);
             return MapToDto(created!);
         }
+        private async Task CreateReturnRecordWithTransactionAsync(ReturnRecord record, Item item)
+        {
+            var strategy = _context.Database.CreateExecutionStrategy();
+
+            await strategy.ExecuteAsync(async () =>
+            {
+                await using var transaction = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    await _returnRecordRepository.CreateAsync(record);
+
+                    item.Status = StatusEnum.RETURNED.ToString();
+                    await _itemRepository.UpdateAsync(item);
+
+                    await transaction.CommitAsync();
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            });
+        }
+
+
 
         public async Task<ReturnRecordDto?> UpdateAsync(Guid id, UpdateReturnRecordDto dto)
         {
@@ -163,8 +194,8 @@ namespace BusinessObjectLayer.Services
             {
                 return false;
             }
-
-            await _returnRecordRepository.RemoveAsync(record);
+            record.Status = StatusEnum.DELETED.ToString();
+            await _returnRecordRepository.UpdateAsync(record);
             return true;
         }
 

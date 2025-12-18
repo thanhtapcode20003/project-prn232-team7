@@ -57,7 +57,6 @@ namespace API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<PagedResult<ItemDto>>> SearchItems(
-            [FromQuery] string? status = null,
             [FromQuery] Guid? userId = null,
             [FromQuery] Guid? categoryId = null,
             [FromQuery] Guid? locationId = null,

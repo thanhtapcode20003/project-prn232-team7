@@ -1,5 +1,3 @@
-using System;
-
 namespace BusinessObjectLayer.DTOs.ReturnRecord
 {
     public class ReturnRecordFilterDto
