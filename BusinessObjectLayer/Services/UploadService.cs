@@ -12,15 +12,20 @@ namespace BusinessObjectLayer.Services
     public class UploadService : IUploadService
     {
         private readonly UploadRepository _uploadRepository;
-        private readonly AuthService _authService;
+        private readonly IAuthService _authService;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly CampusService _campusService;
+        private readonly ICampusService _campusService;
         private readonly IWebHostEnvironment _environment;
         private const string UploadFolder = "uploads";
         private const long MaxFileSize = 10 * 1024 * 1024; // 10MB
         private readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".pdf", ".doc", ".docx" };
 
-        public UploadService(UploadRepository uploadRepository, IWebHostEnvironment environment, AuthService authService, IHttpContextAccessor httpContextAccessor, CampusService campusService)
+        public UploadService(
+            UploadRepository uploadRepository,
+            IWebHostEnvironment environment,
+            IAuthService authService,
+            IHttpContextAccessor httpContextAccessor,
+            ICampusService campusService)
         {
             _uploadRepository = uploadRepository;
             _environment = environment;

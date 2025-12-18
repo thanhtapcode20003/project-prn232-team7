@@ -117,10 +117,11 @@ builder.Services.AddHttpContextAccessor();
 
 // existing registrations
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<AuthService>(); // for services that depend on AuthService directly
 builder.Services.AddScoped<ICampusService, CampusService>();
 builder.Services.AddScoped<IServiceLocationService, ServiceLocationService>();
 builder.Services.AddScoped<IItemService, ItemService>();  // ✅ Thêm dòng này
-//builder.Services.AddScoped<IUploadService, UploadService>();
+builder.Services.AddScoped<IUploadService, UploadService>();
 builder.Services.AddScoped<IReturnRecordService, ReturnRecordService>();
 // Thêm các service khác ở đây nếu cần
 // builder.Services.AddScoped<ICategoryService, CategoryService>();
@@ -132,6 +133,7 @@ builder.Services.AddScoped(typeof(Repository.GenericRepository<>));
 builder.Services.AddScoped<Repository.UploadRepository>();
 builder.Services.AddScoped<Repository.ItemRepository>();
 builder.Services.AddScoped<Repository.ServiceLocationrepository>();
+builder.Services.AddScoped<Repository.CampusRepository>();
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
 
