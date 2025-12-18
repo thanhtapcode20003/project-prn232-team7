@@ -13,7 +13,7 @@ namespace API.Controllers
     public class ServiceLocationController : ControllerBase
     {
         private readonly IServiceLocationService _serviceLocationService;
-        
+
         public ServiceLocationController(IServiceLocationService serviceLocationService)
         {
             _serviceLocationService = serviceLocationService;
@@ -59,7 +59,7 @@ namespace API.Controllers
                 Page = page,
                 PageSize = pageSize
             };
-            
+
             var result = await _serviceLocationService.SearchServiceLocationsAsync(filter);
             return Ok(ApiResponse<PaginationResult<List<ServiceLocationResponse>>>.Ok(
                 result,
@@ -67,25 +67,6 @@ namespace API.Controllers
             ));
         }
 
-        /// <summary>
-        /// GET /api/service-locations/{id} - Get service location by ID
-        /// </summary>
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetServiceLocationById([FromRoute] Guid id)
-        {
-            var serviceLocation = await _serviceLocationService.GetById(id);
-            return Ok(ApiResponse<ServiceLocationResponse>.Ok(serviceLocation, "Get service location by id successfully"));
-        }
-
-        /// <summary>
-        /// GET /api/service-locations/campus/{campusId} - Get service locations by campus ID
-        /// </summary>
-        [HttpGet("campus/{campusId}")]
-        public async Task<IActionResult> GetServiceLocationsByCampusId([FromRoute] Guid campusId)
-        {
-            var serviceLocations = await _serviceLocationService.GetAllByCampusId(campusId);
-            return Ok(ApiResponse<List<ServiceLocationResponse>>.Ok(serviceLocations, "Get service locations by campus id successfully"));
-        }
 
         /// <summary>
         /// POST /api/service-locations - Create new service location
