@@ -26,8 +26,8 @@ namespace BusinessObjectLayer.Services
             var returnRecords = await _returnRecordRepository.SearchReturnRecordsAsync(
                 status: filter.Status,
                 itemId: filter.ItemId,
-                foundUserId: filter.FoundUserId,
-                receiverUserId: filter.ReceiverUserId,
+                staffId: filter.StaffId,
+                userId: filter.UserId,
                 fromDate: filter.FromDate,
                 toDate: filter.ToDate,
                 searchTerm: filter.SearchTerm,
@@ -38,8 +38,8 @@ namespace BusinessObjectLayer.Services
             var totalCount = await _returnRecordRepository.CountReturnRecordsAsync(
                 status: filter.Status,
                 itemId: filter.ItemId,
-                foundUserId: filter.FoundUserId,
-                receiverUserId: filter.ReceiverUserId,
+                staffId: filter.StaffId,
+                userId: filter.UserId,
                 fromDate: filter.FromDate,
                 toDate: filter.ToDate,
                 searchTerm: filter.SearchTerm
@@ -67,31 +67,34 @@ namespace BusinessObjectLayer.Services
             if (!itemExists)
                 throw new NotFoundException("Item", createReturnRecordDto.ItemId.ToString());
 
-            // Validate FoundUser exists
-            var foundUserExists = await _returnRecordRepository.UserExistsAsync(createReturnRecordDto.FoundUserId);
-            if (!foundUserExists)
-                throw new NotFoundException("Found User", createReturnRecordDto.FoundUserId.ToString());
+            // Validate Staff exists
+            var staffExists = await _returnRecordRepository.UserExistsAsync(createReturnRecordDto.StaffId);
+            if (!staffExists)
+                throw new NotFoundException("Staff User", createReturnRecordDto.StaffId.ToString());
 
-            // Validate ReceiverUser exists if provided
-            if (createReturnRecordDto.ReceiverUserId.HasValue)
-            {
-                var receiverUserExists = await _returnRecordRepository.UserExistsAsync(createReturnRecordDto.ReceiverUserId.Value);
-                if (!receiverUserExists)
-                    throw new NotFoundException("Receiver User", createReturnRecordDto.ReceiverUserId.Value.ToString());
-            }
+            // Validate User exists
+            var userExists = await _returnRecordRepository.UserExistsAsync(createReturnRecordDto.UserId);
+            if (!userExists)
+                throw new NotFoundException("User", createReturnRecordDto.UserId.ToString());
 
             var returnRecord = new ReturnRecord
             {
-                ReturnId = Guid.NewGuid(),
+                Id = Guid.NewGuid(),
                 ItemId = createReturnRecordDto.ItemId,
-                FoundUserId = createReturnRecordDto.FoundUserId,
-                ReceiverUserId = createReturnRecordDto.ReceiverUserId,
-                ReturnDate = createReturnRecordDto.ReturnDate ?? DateTime.Now,
-                Status = createReturnRecordDto.Status
+                StaffId = createReturnRecordDto.StaffId,
+                UserId = createReturnRecordDto.UserId,
+                ImgCccdFont = createReturnRecordDto.ImgCccdFont,
+                ImgCccdBack = createReturnRecordDto.ImgCccdBack,
+                EvidenceImg = createReturnRecordDto.EvidenceImg,
+                ConfirmImg = createReturnRecordDto.ConfirmImg,
+                VerifyNotes = createReturnRecordDto.VerifyNotes,
+                Status = createReturnRecordDto.Status,
+                DateCreated = DateTime.Now,
+                DateUpdate = DateTime.Now
             };
 
             await _returnRecordRepository.CreateAsync(returnRecord);
-            var createdReturnRecord = await _returnRecordRepository.GetByIdWithDetailsAsync(returnRecord.ReturnId);
+            var createdReturnRecord = await _returnRecordRepository.GetByIdWithDetailsAsync(returnRecord.Id);
             return MapToDto(createdReturnRecord!);
         }
 
@@ -106,25 +109,26 @@ namespace BusinessObjectLayer.Services
             if (!itemExists)
                 throw new NotFoundException("Item", updateReturnRecordDto.ItemId.ToString());
 
-            // Validate FoundUser exists
-            var foundUserExists = await _returnRecordRepository.UserExistsAsync(updateReturnRecordDto.FoundUserId);
-            if (!foundUserExists)
-                throw new NotFoundException("Found User", updateReturnRecordDto.FoundUserId.ToString());
+            // Validate Staff exists
+            var staffExists = await _returnRecordRepository.UserExistsAsync(updateReturnRecordDto.StaffId);
+            if (!staffExists)
+                throw new NotFoundException("Staff User", updateReturnRecordDto.StaffId.ToString());
 
-            // Validate ReceiverUser exists if provided
-            if (updateReturnRecordDto.ReceiverUserId.HasValue)
-            {
-                var receiverUserExists = await _returnRecordRepository.UserExistsAsync(updateReturnRecordDto.ReceiverUserId.Value);
-                if (!receiverUserExists)
-                    throw new NotFoundException("Receiver User", updateReturnRecordDto.ReceiverUserId.Value.ToString());
-            }
+            // Validate User exists
+            var userExists = await _returnRecordRepository.UserExistsAsync(updateReturnRecordDto.UserId);
+            if (!userExists)
+                throw new NotFoundException("User", updateReturnRecordDto.UserId.ToString());
 
             existingReturnRecord.ItemId = updateReturnRecordDto.ItemId;
-            existingReturnRecord.FoundUserId = updateReturnRecordDto.FoundUserId;
-            existingReturnRecord.ReceiverUserId = updateReturnRecordDto.ReceiverUserId;
-            if (updateReturnRecordDto.ReturnDate.HasValue)
-                existingReturnRecord.ReturnDate = updateReturnRecordDto.ReturnDate.Value;
+            existingReturnRecord.StaffId = updateReturnRecordDto.StaffId;
+            existingReturnRecord.UserId = updateReturnRecordDto.UserId;
+            existingReturnRecord.ImgCccdFont = updateReturnRecordDto.ImgCccdFont;
+            existingReturnRecord.ImgCccdBack = updateReturnRecordDto.ImgCccdBack;
+            existingReturnRecord.EvidenceImg = updateReturnRecordDto.EvidenceImg;
+            existingReturnRecord.ConfirmImg = updateReturnRecordDto.ConfirmImg;
+            existingReturnRecord.VerifyNotes = updateReturnRecordDto.VerifyNotes;
             existingReturnRecord.Status = updateReturnRecordDto.Status;
+            existingReturnRecord.DateUpdate = DateTime.Now;
 
             await _returnRecordRepository.UpdateAsync(existingReturnRecord);
             var updatedReturnRecord = await _returnRecordRepository.GetByIdWithDetailsAsync(id);
@@ -145,15 +149,21 @@ namespace BusinessObjectLayer.Services
         {
             return new ReturnRecordDto
             {
-                ReturnId = returnRecord.ReturnId,
+                Id = returnRecord.Id,
                 ItemId = returnRecord.ItemId,
-                FoundUserId = returnRecord.FoundUserId,
-                ReceiverUserId = returnRecord.ReceiverUserId,
-                ReturnDate = returnRecord.ReturnDate,
+                StaffId = returnRecord.StaffId,
+                UserId = returnRecord.UserId,
+                ImgCccdFont = returnRecord.ImgCccdFont,
+                ImgCccdBack = returnRecord.ImgCccdBack,
+                EvidenceImg = returnRecord.EvidenceImg,
+                ConfirmImg = returnRecord.ConfirmImg,
+                VerifyNotes = returnRecord.VerifyNotes,
                 Status = returnRecord.Status,
-                ItemName = returnRecord.Item?.ItemName,
-                FoundUserName = returnRecord.FoundUser?.Username,
-                ReceiverUserName = returnRecord.ReceiverUser?.Username
+                DateCreated = returnRecord.DateCreated,
+                DateUpdate = returnRecord.DateUpdate,
+                ItemName = returnRecord.Item?.Name,
+                StaffName = returnRecord.Staff?.Username,
+                UserName = returnRecord.User?.Username
             };
         }
     }

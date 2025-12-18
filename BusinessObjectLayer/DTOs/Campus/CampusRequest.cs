@@ -1,10 +1,18 @@
-﻿namespace BusinessObjectLayer.DTOs.Campus
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace BusinessObjectLayer.DTOs.Campus
 {
     public class CampusRequest
     {
+        [Required(ErrorMessage = "Campus name is required")]
+        [StringLength(255, MinimumLength = 2, ErrorMessage = "Campus name must be between 2 and 255 characters")]
         public string Name { get; set; } = string.Empty;
-        public string Location { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Address is required")]
+        [StringLength(500, MinimumLength = 10, ErrorMessage = "Address must be between 10 and 500 characters")]
         public string Address { get; set; } = string.Empty;
+
+        [StringLength(1000, ErrorMessage = "Description cannot exceed 1000 characters")]
         public string Description { get; set; } = string.Empty;
     }
 }

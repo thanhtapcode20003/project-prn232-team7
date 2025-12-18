@@ -18,8 +18,8 @@ namespace Repository
         {
             return await _context.ReturnRecords
                 .Include(r => r.Item)
-                .Include(r => r.FoundUser)
-                .Include(r => r.ReceiverUser)
+                .Include(r => r.Staff)
+                .Include(r => r.User)
                 .ToListAsync();
         }
 
@@ -27,38 +27,38 @@ namespace Repository
         {
             return await _context.ReturnRecords
                 .Include(r => r.Item)
-                .Include(r => r.FoundUser)
-                .Include(r => r.ReceiverUser)
-                .FirstOrDefaultAsync(r => r.ReturnId == id);
+                .Include(r => r.Staff)
+                .Include(r => r.User)
+                .FirstOrDefaultAsync(r => r.Id == id);
         }
 
         public async Task<List<ReturnRecord>> GetByItemIdAsync(Guid itemId)
         {
             return await _context.ReturnRecords
                 .Include(r => r.Item)
-                .Include(r => r.FoundUser)
-                .Include(r => r.ReceiverUser)
+                .Include(r => r.Staff)
+                .Include(r => r.User)
                 .Where(r => r.ItemId == itemId)
                 .ToListAsync();
         }
 
-        public async Task<List<ReturnRecord>> GetByFoundUserIdAsync(Guid foundUserId)
+        public async Task<List<ReturnRecord>> GetByStaffIdAsync(Guid staffId)
         {
             return await _context.ReturnRecords
                 .Include(r => r.Item)
-                .Include(r => r.FoundUser)
-                .Include(r => r.ReceiverUser)
-                .Where(r => r.FoundUserId == foundUserId)
+                .Include(r => r.Staff)
+                .Include(r => r.User)
+                .Where(r => r.StaffId == staffId)
                 .ToListAsync();
         }
 
-        public async Task<List<ReturnRecord>> GetByReceiverUserIdAsync(Guid receiverUserId)
+        public async Task<List<ReturnRecord>> GetByUserIdAsync(Guid userId)
         {
             return await _context.ReturnRecords
                 .Include(r => r.Item)
-                .Include(r => r.FoundUser)
-                .Include(r => r.ReceiverUser)
-                .Where(r => r.ReceiverUserId == receiverUserId)
+                .Include(r => r.Staff)
+                .Include(r => r.User)
+                .Where(r => r.UserId == userId)
                 .ToListAsync();
         }
 
@@ -66,32 +66,32 @@ namespace Repository
         {
             return await _context.ReturnRecords
                 .Include(r => r.Item)
-                .Include(r => r.FoundUser)
-                .Include(r => r.ReceiverUser)
+                .Include(r => r.Staff)
+                .Include(r => r.User)
                 .Where(r => r.Status == status)
                 .ToListAsync();
         }
 
         public async Task<bool> ExistsAsync(Guid id)
         {
-            return await _context.ReturnRecords.AnyAsync(r => r.ReturnId == id);
+            return await _context.ReturnRecords.AnyAsync(r => r.Id == id);
         }
 
         public async Task<bool> ItemExistsAsync(Guid itemId)
         {
-            return await _context.Items.AnyAsync(i => i.ItemId == itemId);
+            return await _context.Items.AnyAsync(i => i.Id == itemId);
         }
 
         public async Task<bool> UserExistsAsync(Guid userId)
         {
-            return await _context.Users.AnyAsync(u => u.UserId == userId);
+            return await _context.Users.AnyAsync(u => u.Id == userId);
         }
 
         public async Task<List<ReturnRecord>> SearchReturnRecordsAsync(
             string? status = null,
             Guid? itemId = null,
-            Guid? foundUserId = null,
-            Guid? receiverUserId = null,
+            Guid? staffId = null,
+            Guid? userId = null,
             DateTime? fromDate = null,
             DateTime? toDate = null,
             string? searchTerm = null,
@@ -100,8 +100,8 @@ namespace Repository
         {
             var query = _context.ReturnRecords
                 .Include(r => r.Item)
-                .Include(r => r.FoundUser)
-                .Include(r => r.ReceiverUser)
+                .Include(r => r.Staff)
+                .Include(r => r.User)
                 .AsQueryable();
 
             // Apply filters
@@ -111,30 +111,30 @@ namespace Repository
             if (itemId.HasValue)
                 query = query.Where(r => r.ItemId == itemId.Value);
 
-            if (foundUserId.HasValue)
-                query = query.Where(r => r.FoundUserId == foundUserId.Value);
+            if (staffId.HasValue)
+                query = query.Where(r => r.StaffId == staffId.Value);
 
-            if (receiverUserId.HasValue)
-                query = query.Where(r => r.ReceiverUserId == receiverUserId.Value);
+            if (userId.HasValue)
+                query = query.Where(r => r.UserId == userId.Value);
 
             if (fromDate.HasValue)
-                query = query.Where(r => r.ReturnDate >= fromDate.Value);
+                query = query.Where(r => r.DateCreated >= fromDate.Value);
 
             if (toDate.HasValue)
-                query = query.Where(r => r.ReturnDate <= toDate.Value);
+                query = query.Where(r => r.DateCreated <= toDate.Value);
 
             if (!string.IsNullOrEmpty(searchTerm))
             {
                 query = query.Where(r =>
-                    (r.Item != null && r.Item.ItemName != null && r.Item.ItemName.Contains(searchTerm)) ||
-                    (r.FoundUser != null && r.FoundUser.Username != null && r.FoundUser.Username.Contains(searchTerm)) ||
-                    (r.ReceiverUser != null && r.ReceiverUser.Username != null && r.ReceiverUser.Username.Contains(searchTerm)) ||
-                    r.Status.Contains(searchTerm));
+                    (r.Item != null && r.Item.Name != null && r.Item.Name.Contains(searchTerm)) ||
+                    (r.Staff != null && r.Staff.Username != null && r.Staff.Username.Contains(searchTerm)) ||
+                    (r.User != null && r.User.Username != null && r.User.Username.Contains(searchTerm)) ||
+                    (r.Status != null && r.Status.Contains(searchTerm)));
             }
 
             // Pagination
             query = query
-                .OrderByDescending(r => r.ReturnDate)
+                .OrderByDescending(r => r.DateCreated)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize);
 
@@ -144,8 +144,8 @@ namespace Repository
         public async Task<int> CountReturnRecordsAsync(
             string? status = null,
             Guid? itemId = null,
-            Guid? foundUserId = null,
-            Guid? receiverUserId = null,
+            Guid? staffId = null,
+            Guid? userId = null,
             DateTime? fromDate = null,
             DateTime? toDate = null,
             string? searchTerm = null)
@@ -158,25 +158,25 @@ namespace Repository
             if (itemId.HasValue)
                 query = query.Where(r => r.ItemId == itemId.Value);
 
-            if (foundUserId.HasValue)
-                query = query.Where(r => r.FoundUserId == foundUserId.Value);
+            if (staffId.HasValue)
+                query = query.Where(r => r.StaffId == staffId.Value);
 
-            if (receiverUserId.HasValue)
-                query = query.Where(r => r.ReceiverUserId == receiverUserId.Value);
+            if (userId.HasValue)
+                query = query.Where(r => r.UserId == userId.Value);
 
             if (fromDate.HasValue)
-                query = query.Where(r => r.ReturnDate >= fromDate.Value);
+                query = query.Where(r => r.DateCreated >= fromDate.Value);
 
             if (toDate.HasValue)
-                query = query.Where(r => r.ReturnDate <= toDate.Value);
+                query = query.Where(r => r.DateCreated <= toDate.Value);
 
             if (!string.IsNullOrEmpty(searchTerm))
             {
                 query = query.Where(r =>
-                    r.Status.Contains(searchTerm) ||
-                    _context.Items.Any(i => i.ItemId == r.ItemId && i.ItemName.Contains(searchTerm)) ||
-                    _context.Users.Any(u => u.UserId == r.FoundUserId && u.Username.Contains(searchTerm)) ||
-                    (r.ReceiverUserId != null && _context.Users.Any(u => u.UserId == r.ReceiverUserId && u.Username.Contains(searchTerm))));
+                    (r.Status != null && r.Status.Contains(searchTerm)) ||
+                    _context.Items.Any(i => i.Id == r.ItemId && i.Name.Contains(searchTerm)) ||
+                    _context.Users.Any(u => u.Id == r.StaffId && u.Username.Contains(searchTerm)) ||
+                    _context.Users.Any(u => u.Id == r.UserId && u.Username.Contains(searchTerm)));
             }
 
             return await query.CountAsync();

@@ -3,6 +3,7 @@ using BusinessObjectLayer.Exceptions;
 using BusinessObjectLayer.IService;
 using DataAccessLayer.DbContxts;
 using DataAccessLayer.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -19,15 +20,17 @@ public class AuthService : IAuthService
     private readonly LostAndFoundDbContext _context;
     private readonly IConfiguration _configuration;
     private readonly ILogger<AuthService> _logger;
-
+    private readonly IHttpContextAccessor _httpContextAccessor;
     public AuthService(
         LostAndFoundDbContext context,
         IConfiguration configuration,
-        ILogger<AuthService> logger)
+        ILogger<AuthService> logger,
+        IHttpContextAccessor httpContextAccessor)
     {
         _context = context;
         _configuration = configuration;
         _logger = logger;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request)
@@ -53,7 +56,7 @@ public class AuthService : IAuthService
         }
 
         // Check user status
-        if (!user.Status.Equals(StatusEnum.ACTIVE.ToString()))
+        if (!user.Status.ToLower().Equals(StatusEnum.ACTIVE.ToString().ToLower()))
         {
             _logger.LogWarning("Login failed: Account inactive - {Username}", request.Username);
             throw new UnauthorizedException("Account is inactive");
@@ -64,16 +67,16 @@ public class AuthService : IAuthService
         var expiresAt = DateTime.UtcNow.AddHours(
             double.Parse(_configuration["Jwt:ExpiryHours"] ?? "24"));
 
-        _logger.LogInformation("Login successful for user: {UserId} - {Username}", user.UserId, user.Username);
+        _logger.LogInformation("Login successful for user: {UserId} - {Username}", user.Id, user.Username);
 
         return new AuthResponseDto
         {
-            UserId = user.UserId,
+            UserId = user.Id,
             Username = user.Username!,
-            Name = user.FullName ?? user.Name ?? string.Empty,
-            Gmail = user.Email,
+            Name = user.Name ?? string.Empty,
+            Gmail = user.Gmail,
             Token = token,
-            RoleName = user.Role.RoleName,
+            RoleName = user.Role.Name,
             ExpiresAt = expiresAt
         };
     }
@@ -94,7 +97,7 @@ public class AuthService : IAuthService
 
         // Check if email already exists
         var existingEmail = await _context.Users
-            .FirstOrDefaultAsync(u => u.Email == request.Gmail);
+            .FirstOrDefaultAsync(u => u.Gmail == request.Gmail);
 
         if (existingEmail != null)
         {
@@ -102,49 +105,46 @@ public class AuthService : IAuthService
             throw new ApiException(409, "HB40901", "Email already exists");
         }
 
-        // Get default role (Student role)
-        var userRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "Student");
+        // Get default role (User role)
+        var userRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == RoleEnum.User.ToString());
         if (userRole == null)
         {
-            _logger.LogError("Registration failed: Default user role 'Student' not found in database");
+            _logger.LogError("Registration failed: Default user role 'User' not found in database");
             throw new ApiException(500, "HB50001", "Default user role not found");
         }
 
         // Create new user
         var newUser = new User
         {
-            FullName = request.Name,
-            Name = request.Name,  // Đồng bộ cả hai field
+            Name = request.Name,
             Username = request.Username,
             Password = HashPassword(request.Password), // Hash password
-            Email = request.Gmail,
-            PhoneNumber = request.Phone,
+            Gmail = request.Gmail,
+            Phone = request.Phone,
             Address = request.Address,
-            RoleId = userRole.RoleId,
+            RoleId = userRole.Id,
             Status = StatusEnum.ACTIVE.ToString() // Active by default
         };
 
         _context.Users.Add(newUser);
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation("User created successfully: {UserId} - {Username}", newUser.UserId, newUser.Username);
+        _logger.LogInformation("User created successfully: {UserId} - {Username}", newUser.Id, newUser.Username);
 
-        // ✅ FIX: Gán Role cho newUser để tránh NullReferenceException khi tạo JWT token
         newUser.Role = userRole;
 
-        // Generate JWT token
         var token = GenerateJwtToken(newUser);
         var expiresAt = DateTime.UtcNow.AddHours(
             double.Parse(_configuration["Jwt:ExpiryHours"] ?? "24"));
 
         return new AuthResponseDto
         {
-            UserId = newUser.UserId,
+            UserId = newUser.Id,
             Username = newUser.Username!,
-            Name = newUser.FullName ?? newUser.Name ?? string.Empty,
-            Gmail = newUser.Email,
+            Name = newUser.Name ?? string.Empty,
+            Gmail = newUser.Gmail,
             Token = token,
-            RoleName = newUser.Role.RoleName,
+            RoleName = newUser.Role.Name,
             ExpiresAt = expiresAt
         };
     }
@@ -155,7 +155,7 @@ public class AuthService : IAuthService
 
         var user = await _context.Users
             .Include(u => u.Role)
-            .FirstOrDefaultAsync(u => u.UserId == userId);
+            .FirstOrDefaultAsync(u => u.Id == userId);
 
         if (user == null)
         {
@@ -165,13 +165,13 @@ public class AuthService : IAuthService
 
         return new UserDto
         {
-            Id = user.UserId,
-            Name = user.FullName ?? user.Name ?? string.Empty,
-            Phone = user.PhoneNumber,
-            Gmail = user.Email,
+            Id = user.Id,
+            Name = user.Name ?? string.Empty,
+            Phone = user.Phone,
+            Gmail = user.Gmail,
             Address = user.Address,
             Username = user.Username,
-            RoleName = user.Role?.RoleName ?? "Unknown",
+            RoleName = user.Role?.Name ?? "Unknown",
             Status = user.Status
         };
     }
@@ -180,7 +180,7 @@ public class AuthService : IAuthService
     {
         if (user.Role == null)
         {
-            _logger.LogError("Cannot generate JWT token: User.Role is null for UserId: {UserId}", user.UserId);
+            _logger.LogError("Cannot generate JWT token: User.Role is null for UserId: {UserId}", user.Id);
             throw new InvalidOperationException("User role is not loaded");
         }
 
@@ -190,11 +190,11 @@ public class AuthService : IAuthService
 
         var claims = new[]
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.UniqueName, user.Username ?? string.Empty),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
-            new Claim(ClaimTypes.Role, user.Role.RoleName),
-            new Claim(ClaimTypes.Name, user.FullName ?? user.Name ?? string.Empty),
+            new Claim(JwtRegisteredClaimNames.Email, user.Gmail ?? string.Empty),
+            new Claim(ClaimTypes.Role, user.Role.Name),
+            new Claim(ClaimTypes.Name, user.Name ?? string.Empty),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
@@ -206,7 +206,7 @@ public class AuthService : IAuthService
             signingCredentials: credentials
         );
 
-        _logger.LogDebug("JWT token generated for user: {UserId}", user.UserId);
+        _logger.LogDebug("JWT token generated for user: {UserId}", user.Id);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
@@ -228,5 +228,29 @@ public class AuthService : IAuthService
 
         var hashedInput = HashPassword(inputPassword);
         return hashedInput == storedPassword;
+    }
+    private Guid GetCurrentUserId()
+    {
+        var userIdClaim = _httpContextAccessor.HttpContext?.User
+            .FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(userIdClaim))
+        {
+            throw new UnauthorizedException("User not authenticated");
+        }
+
+        return Guid.Parse(userIdClaim);
+    }
+    public User GetCurrentUser()
+    {
+        var userId = GetCurrentUserId();
+        var user = _context.Users
+            .Include(u => u.Role)
+            .FirstOrDefault(u => u.Id == userId);
+        if (user == null)
+        {
+            throw new UnauthorizedException("User not found");
+        }
+        return user;
     }
 }

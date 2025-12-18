@@ -35,19 +35,22 @@ namespace BusinessObjectLayer.Services
         {
             var item = new Item
             {
-                ItemId = Guid.NewGuid(),
-                ItemName = createItemDto.ItemName,
+                Id = Guid.NewGuid(),
+                Name = createItemDto.Name,
                 Description = createItemDto.Description,
-                LostDate = createItemDto.LostDate,
-                LostTime = createItemDto.LostTime,
+                Img = createItemDto.Img,
                 CategoryId = createItemDto.CategoryId,
+                Status = createItemDto.Status,
+                Date = createItemDto.Date,
+                FoundLocation = createItemDto.FoundLocation,
+                CurrentLocationId = createItemDto.CurrentLocationId,
+                Context = createItemDto.Context,
                 UserId = createItemDto.UserId,
-                LocationId = createItemDto.LocationId,
-                Status = createItemDto.Status
+                FoundDate = createItemDto.FoundDate
             };
 
             await _itemRepository.CreateAsync(item);
-            var createdItem = await _itemRepository.GetByIdWithDetailsAsync(item.ItemId);
+            var createdItem = await _itemRepository.GetByIdWithDetailsAsync(item.Id);
             return MapToDto(createdItem!);
         }
 
@@ -57,14 +60,17 @@ namespace BusinessObjectLayer.Services
             if (existingItem == null)
                 return null;
 
-            existingItem.ItemName = updateItemDto.ItemName;
+            existingItem.Name = updateItemDto.Name;
             existingItem.Description = updateItemDto.Description;
-            existingItem.LostDate = updateItemDto.LostDate;
-            existingItem.LostTime = updateItemDto.LostTime;
+            existingItem.Img = updateItemDto.Img;
             existingItem.CategoryId = updateItemDto.CategoryId;
-            existingItem.UserId = updateItemDto.UserId;
-            existingItem.LocationId = updateItemDto.LocationId;
             existingItem.Status = updateItemDto.Status;
+            existingItem.Date = updateItemDto.Date;
+            existingItem.FoundLocation = updateItemDto.FoundLocation;
+            existingItem.CurrentLocationId = updateItemDto.CurrentLocationId;
+            existingItem.Context = updateItemDto.Context;
+            existingItem.UserId = updateItemDto.UserId;
+            existingItem.FoundDate = updateItemDto.FoundDate;
 
             await _itemRepository.UpdateAsync(existingItem);
             var updatedItem = await _itemRepository.GetByIdWithDetailsAsync(id);
@@ -120,17 +126,20 @@ namespace BusinessObjectLayer.Services
         {
             return new ItemDto
             {
-                ItemId = item.ItemId,
-                ItemName = item.ItemName,
+                Id = item.Id,
+                Name = item.Name,
                 Description = item.Description,
-                LostDate = item.LostDate,
-                LostTime = item.LostTime,
+                Img = item.Img,
                 CategoryId = item.CategoryId,
-                UserId = item.UserId,
-                LocationId = item.LocationId,
                 Status = item.Status,
-                CategoryName = item.Category?.CategoryName,
-                LocationName = item.Location?.LocationName,
+                Date = item.Date,
+                FoundLocation = item.FoundLocation,
+                CurrentLocationId = item.CurrentLocationId,
+                Context = item.Context,
+                UserId = item.UserId,
+                FoundDate = item.FoundDate,
+                CategoryName = item.Category?.Name,
+                CurrentLocationName = item.CurrentLocation?.Name,
                 UserName = item.User?.Username
             };
         }

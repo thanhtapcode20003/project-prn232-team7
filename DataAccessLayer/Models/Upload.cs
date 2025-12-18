@@ -29,9 +29,11 @@ public partial class Upload
 
     public Guid Userid { get; set; }
 
-    public string? Type { get; set; }
-
     public string? Note { get; set; }
+
+    public DateTime? NoteCreate { get; set; }
+
+    public DateTime? NoteUpdate { get; set; }
 
     public DateTime? DateUpdate { get; set; }
 

@@ -1,4 +1,5 @@
 using BusinessObjectLayer.DTOs.Upload;
+using BusinessObjectLayer.Exceptions;
 using BusinessObjectLayer.IService;
 using DataAccessLayer.Models;
 using Microsoft.AspNetCore.Hosting;
@@ -11,22 +12,24 @@ namespace BusinessObjectLayer.Services
     public class UploadService : IUploadService
     {
         private readonly UploadRepository _uploadRepository;
-        private readonly ItemRepository _itemRepository;
+        private readonly AuthService _authService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IWebHostEnvironment _environment;
         private const string UploadFolder = "uploads";
         private const long MaxFileSize = 10 * 1024 * 1024; // 10MB
         private readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".pdf", ".doc", ".docx" };
 
-        public UploadService(UploadRepository uploadRepository, ItemRepository itemRepository, IWebHostEnvironment environment)
+        public UploadService(UploadRepository uploadRepository, IWebHostEnvironment environment, AuthService authService, IHttpContextAccessor httpContextAccessor)
         {
             _uploadRepository = uploadRepository;
-            _itemRepository = itemRepository;
             _environment = environment;
+            _authService = authService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<List<UploadDto>> GetAllUploadsAsync()
         {
-            var uploads = await _uploadRepository.GetAllWithItemAsync();
+            var uploads = await _uploadRepository.GetAllWithDetailsAsync();
             return uploads.Select(MapToDto).ToList();
         }
 
@@ -34,8 +37,10 @@ namespace BusinessObjectLayer.Services
         {
             var uploads = await _uploadRepository.SearchUploadsAsync(
                 status: filter.Status,
-                statusAccept: filter.StatusAccept,
-                itemId: filter.ItemId,
+                userId: filter.UserId,
+                categoryId: filter.CategoryId,
+                staffId: filter.StaffId,
+                type: filter.Type,
                 searchTerm: filter.SearchTerm,
                 fromDate: filter.FromDate,
                 toDate: filter.ToDate,
@@ -45,8 +50,10 @@ namespace BusinessObjectLayer.Services
 
             var totalCount = await _uploadRepository.CountUploadsAsync(
                 status: filter.Status,
-                statusAccept: filter.StatusAccept,
-                itemId: filter.ItemId,
+                userId: filter.UserId,
+                categoryId: filter.CategoryId,
+                staffId: filter.StaffId,
+                type: filter.Type,
                 searchTerm: filter.SearchTerm,
                 fromDate: filter.FromDate,
                 toDate: filter.ToDate
@@ -63,33 +70,32 @@ namespace BusinessObjectLayer.Services
 
         public async Task<UploadDto?> GetUploadByIdAsync(Guid uploadId)
         {
-            var upload = await _uploadRepository.GetByIdWithItemAsync(uploadId);
+            var upload = await _uploadRepository.GetByIdWithDetailsAsync(uploadId);
             return upload == null ? null : MapToDto(upload);
         }
 
-        public async Task<List<UploadDto>> GetUploadsByItemIdAsync(Guid itemId)
+        public async Task<List<UploadDto>> GetUploadsByCategoryIdAsync(Guid categoryId)
         {
-            var uploads = await _uploadRepository.GetByItemIdAsync(itemId);
+            var uploads = await _uploadRepository.GetByCategoryIdAsync(categoryId);
             return uploads.Select(MapToDto).ToList();
         }
 
-        public async Task<UploadDto> UploadFileAsync(Guid itemId, IFormFile file, string status = "Pending", string? statusAccept = null)
+        public async Task<UploadDto> UploadFileAsync(CreateUploadDto createUploadDto, IFormFile file)
         {
-            // Validate item exists
-            if (!await _uploadRepository.ItemExistsAsync(itemId))
-            {
-                throw new InvalidOperationException($"Item with ID {itemId} does not exist");
-            }
-
             // Validate file
             ValidateFile(file);
-
+            var user = _authService.GetCurrentUser();
+            if (user == null)
+            {
+                throw new UnauthorizedException("not login");
+            }
             // Create uploads directory if it doesn't exist
             var uploadsPath = Path.Combine(_environment.WebRootPath ?? _environment.ContentRootPath, UploadFolder);
             if (!Directory.Exists(uploadsPath))
             {
                 Directory.CreateDirectory(uploadsPath);
             }
+
 
             // Generate unique filename
             var fileExtension = Path.GetExtension(file.FileName);
@@ -108,16 +114,25 @@ namespace BusinessObjectLayer.Services
             // Create upload record
             var upload = new Upload
             {
-                UploadId = Guid.NewGuid(),
-                ItemId = itemId,
-                FileUrl = fileUrl,
-                UploadTime = DateTime.UtcNow,
-                Status = status,
-                StatusAccept = statusAccept
+                Id = Guid.NewGuid(),
+                Name = createUploadDto.Name,
+                Img = fileUrl,
+                Description = createUploadDto.Description,
+                CategoryId = createUploadDto.CategoryId,
+                LostLocation = createUploadDto.LostLocation,
+                LostDate = createUploadDto.LostDate,
+                Userid = user.Id,
+                Content = createUploadDto.Content,
+                Status = createUploadDto.Status,
+                //Staffid = createUploadDto.Staffid,     
+                //Type = createUploadDto.Type,
+                //Note = createUploadDto.Note,
+                DateCreate = DateTime.UtcNow,
+                DateUpdate = DateTime.UtcNow
             };
 
             await _uploadRepository.CreateAsync(upload);
-            var createdUpload = await _uploadRepository.GetByIdWithItemAsync(upload.UploadId);
+            var createdUpload = await _uploadRepository.GetByIdWithDetailsAsync(upload.Id);
             return MapToDto(createdUpload!);
         }
 
@@ -127,14 +142,20 @@ namespace BusinessObjectLayer.Services
             if (existingUpload == null)
                 return null;
 
-            if (!string.IsNullOrEmpty(updateUploadDto.Status))
-                existingUpload.Status = updateUploadDto.Status;
-
-            if (updateUploadDto.StatusAccept != null)
-                existingUpload.StatusAccept = updateUploadDto.StatusAccept;
+            existingUpload.Name = updateUploadDto.Name;
+            existingUpload.Description = updateUploadDto.Description;
+            existingUpload.CategoryId = updateUploadDto.CategoryId;
+            existingUpload.LostLocation = updateUploadDto.LostLocation;
+            existingUpload.LostDate = updateUploadDto.LostDate;
+            existingUpload.Content = updateUploadDto.Content;
+            existingUpload.Status = updateUploadDto.Status;
+            //existingUpload.Staffid = updateUploadDto.Staffid;
+            //existingUpload.Type = updateUploadDto.Type;
+            //existingUpload.Note = updateUploadDto.Note;
+            existingUpload.DateUpdate = DateTime.UtcNow;
 
             await _uploadRepository.UpdateAsync(existingUpload);
-            var updatedUpload = await _uploadRepository.GetByIdWithItemAsync(uploadId);
+            var updatedUpload = await _uploadRepository.GetByIdWithDetailsAsync(uploadId);
             return MapToDto(updatedUpload!);
         }
 
@@ -142,13 +163,20 @@ namespace BusinessObjectLayer.Services
         {
             var upload = await _uploadRepository.GetByIdAsync(uploadId);
             if (upload == null)
-                return false;
+            {
+                throw new NotFoundException("not found upload with id", uploadId.ToString());
+            }
 
-            // Delete physical file
-            await DeleteFileAsync(upload.FileUrl);
+            // Delete physical file if exists
+            //if (!string.IsNullOrEmpty(upload.Img))
+            //{
+            //    await DeleteFileAsync(upload.Img);
+            //}
 
             // Delete database record
-            await _uploadRepository.RemoveAsync(upload);
+            //await _uploadRepository.RemoveAsync(upload);
+            upload.Status = "DELETED";
+            await _uploadRepository.UpdateAsync(upload);
             return true;
         }
 
@@ -156,12 +184,12 @@ namespace BusinessObjectLayer.Services
         {
             try
             {
-                var filePath = fileUrl.StartsWith("/") 
-                    ? fileUrl.Substring(1) 
+                var filePath = fileUrl.StartsWith("/")
+                    ? fileUrl.Substring(1)
                     : fileUrl;
-                
+
                 var fullPath = Path.Combine(_environment.WebRootPath ?? _environment.ContentRootPath, filePath);
-                
+
                 if (File.Exists(fullPath))
                 {
                     File.Delete(fullPath);
@@ -193,18 +221,67 @@ namespace BusinessObjectLayer.Services
             }
         }
 
-        private UploadDto MapToDto(Upload upload)
+        private UploadDto MapToDto(DataAccessLayer.Models.Upload upload)
         {
             return new UploadDto
             {
-                UploadId = upload.UploadId,
-                ItemId = upload.ItemId,
-                FileUrl = upload.FileUrl,
-                UploadTime = upload.UploadTime,
+                Id = upload.Id,
+                Name = upload.Name,
+                Img = upload.Img,
+                Description = upload.Description,
+                CategoryId = upload.CategoryId,
+                LostLocation = upload.LostLocation,
+                LostDate = upload.LostDate,
+                Content = upload.Content,
                 Status = upload.Status,
-                StatusAccept = upload.StatusAccept,
-                ItemName = upload.Item?.ItemName
+                Staffid = upload.Staffid,
+                DateCreate = upload.DateCreate,
+                Userid = upload.Userid,
+                Note = upload.Note,
+                DateUpdate = upload.DateUpdate,
+                CategoryName = upload.Category?.Name,
+                UserName = upload.User?.Username,
+                StaffName = upload.Staff?.Username
             };
+        }
+
+        public async Task<UploadDto> SendNotificationUpload(Guid uploadId, SendNotificationDTO sendNotificationDTO)
+        {
+            var upload = await _uploadRepository.GetByIdWithDetailsAsync(uploadId);
+            var user = _authService.GetCurrentUser();
+            if (user == null)
+            {
+                throw new UnauthorizedException("not login");
+            }
+            if (upload == null)
+            {
+                throw new NotFoundException("not found upload with id", uploadId.ToString());
+            }
+            upload.Note = sendNotificationDTO.Note;
+            upload.NoteCreate = DateTime.UtcNow;
+            upload.Staffid = user.Id;
+
+            await _uploadRepository.UpdateAsync(upload);
+            return MapToDto(upload);
+        }
+
+        public async Task<UploadDto> UpdateSendNotificationUpload(Guid uploadId, SendNotificationDTO sendNotificationDTO)
+        {
+            var upload = await _uploadRepository.GetByIdWithDetailsAsync(uploadId);
+            if (upload == null)
+            {
+                throw new NotFoundException("not found upload with id", uploadId.ToString());
+            }
+            var user = _authService.GetCurrentUser();
+            if (user == null)
+            {
+                throw new UnauthorizedException("not login");
+            }
+            upload.Note = sendNotificationDTO.Note;
+            upload.NoteUpdate = DateTime.UtcNow;
+            upload.Staffid = user.Id;
+            await _uploadRepository.UpdateAsync(upload);
+            return MapToDto(upload);
         }
     }
 }

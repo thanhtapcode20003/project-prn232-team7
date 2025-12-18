@@ -1,12 +1,13 @@
 using BusinessObjectLayer.DTOs.Upload;
+using BusinessObjectLayer.Enum;
 using BusinessObjectLayer.IService;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using API.DTOs;
 
 namespace API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/uploads")]
     public class UploadsController : ControllerBase
     {
         private readonly IUploadService _uploadService;
@@ -22,7 +23,14 @@ namespace API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<BusinessObjectLayer.IService.PagedResult<UploadDto>>> GetAllUploads(
+            [FromQuery] string? status = null,
+            [FromQuery] Guid? userId = null,
+            [FromQuery] Guid? categoryId = null,
+            [FromQuery] Guid? staffId = null,
+            [FromQuery] string? type = null,
             [FromQuery] string? searchTerm = null,
+            [FromQuery] DateTime? fromDate = null,
+            [FromQuery] DateTime? toDate = null,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10)
         {
@@ -30,7 +38,14 @@ namespace API.Controllers
             {
                 var filter = new UploadFilterDto
                 {
+                    Status = status,
+                    UserId = userId,
+                    CategoryId = categoryId,
+                    StaffId = staffId,
+                    Type = type,
                     SearchTerm = searchTerm,
+                    FromDate = fromDate,
+                    ToDate = toDate,
                     PageNumber = pageNumber,
                     PageSize = pageSize
                 };
@@ -65,45 +80,39 @@ namespace API.Controllers
             }
         }
 
-
-        [HttpGet("item/{itemId}")]
+        [HttpGet("category/{categoryId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<List<UploadDto>>> GetUploadsByItemId(Guid itemId)
+        public async Task<ActionResult<List<UploadDto>>> GetUploadsByCategoryId(Guid categoryId)
         {
             try
             {
-                var uploads = await _uploadService.GetUploadsByItemIdAsync(itemId);
+                var uploads = await _uploadService.GetUploadsByCategoryIdAsync(categoryId);
                 return Ok(uploads);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting uploads for item {ItemId}", itemId);
+                _logger.LogError(ex, "Error getting uploads for category {CategoryId}", categoryId);
                 return StatusCode(500, new { message = "An error occurred" });
             }
         }
 
-
-        [HttpPost("upload")]
+        [HttpPost]
         [Consumes("multipart/form-data")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<UploadDto>> UploadFile([FromForm] FileUploadDto fileUploadDto)
+        public async Task<ActionResult<UploadDto>> UploadFile([FromForm] CreateUploadDto createUploadDto, IFormFile file)
         {
             try
             {
-                if (fileUploadDto.File == null || fileUploadDto.File.Length == 0)
+                if (file == null || file.Length == 0)
                 {
                     return BadRequest(new { message = "File is required" });
                 }
 
-                var upload = await _uploadService.UploadFileAsync(
-                    fileUploadDto.ItemId, 
-                    fileUploadDto.File, 
-                    fileUploadDto.Status, 
-                    fileUploadDto.StatusAccept);
-                    
-                return CreatedAtAction(nameof(GetUploadById), new { id = upload.UploadId }, upload);
+                var upload = await _uploadService.UploadFileAsync(createUploadDto, file);
+
+                return CreatedAtAction(nameof(GetUploadById), new { id = upload.Id }, upload);
             }
             catch (ArgumentException ex)
             {
@@ -121,7 +130,6 @@ namespace API.Controllers
                 return StatusCode(500, new { message = "An error occurred while uploading the file" });
             }
         }
-
 
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -164,6 +172,52 @@ namespace API.Controllers
             {
                 _logger.LogError(ex, "Error deleting upload {UploadId}", id);
                 return StatusCode(500, new { message = "An error occurred" });
+            }
+        }
+
+        [HttpPost("send-notification/{uploadId}")]
+        [Authorize(Roles = nameof(RoleEnum.Admin) + "," + nameof(RoleEnum.Staff))]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> CreateNotification(
+        [FromRoute] Guid uploadId,
+        [FromBody] SendNotificationDTO send)
+        {
+            try
+            {
+                var result = await _uploadService.SendNotificationUpload(uploadId, send);
+
+                if (result == null)
+                    return NotFound(new { message = "Upload not found" });
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPut("send-notification/{uploadId}")]
+        [Authorize(Roles = nameof(RoleEnum.Admin) + "," + nameof(RoleEnum.Staff))]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateNotification(
+       [FromRoute] Guid uploadId,
+       [FromBody] SendNotificationDTO send)
+        {
+            try
+            {
+                var result = await _uploadService.UpdateSendNotificationUpload(uploadId, send);
+
+                if (result == null)
+                    return NotFound(new { message = "Upload not found" });
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
         }
     }

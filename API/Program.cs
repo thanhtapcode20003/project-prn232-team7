@@ -127,8 +127,7 @@ builder.Services.AddScoped<ICategoriesService, CategoriesService>();
 builder.Services.AddScoped(typeof(Repository.GenericRepository<>));
 builder.Services.AddScoped<Repository.UploadRepository>();
 builder.Services.AddScoped<Repository.ItemRepository>();
-
-
+builder.Services.AddScoped<Repository.ServiceLocationrepository>();
 
 
 

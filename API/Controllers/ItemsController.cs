@@ -1,11 +1,13 @@
 ﻿using BusinessObjectLayer.DTOs.Item;
+using BusinessObjectLayer.Enum;
 using BusinessObjectLayer.IService;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/items")]
     public class ItemsController : ControllerBase
     {
         private readonly IItemService _itemService;
@@ -45,8 +47,8 @@ namespace API.Controllers
         /// <param name="categoryId">Filter by category ID</param>
         /// <param name="locationId">Filter by location ID</param>
         /// <param name="searchTerm">Search in item name and description</param>
-        /// <param name="fromDate">Filter from date (YYYY-MM-DD)</param>
-        /// <param name="toDate">Filter to date (YYYY-MM-DD)</param>
+        /// <param name="fromDate">Filter from date (YYYY-MM-DD HH:mm:ss)</param>
+        /// <param name="toDate">Filter to date (YYYY-MM-DD HH:mm:ss)</param>
         /// <param name="pageNumber">Page number (default: 1)</param>
         /// <param name="pageSize">Items per page (default: 10)</param>
         /// <returns>Paginated list of filtered items</returns>
@@ -59,8 +61,8 @@ namespace API.Controllers
             [FromQuery] Guid? categoryId = null,
             [FromQuery] Guid? locationId = null,
             [FromQuery] string? searchTerm = null,
-            [FromQuery] DateOnly? fromDate = null,
-            [FromQuery] DateOnly? toDate = null,
+            [FromQuery] DateTime? fromDate = null,
+            [FromQuery] DateTime? toDate = null,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10)
         {
@@ -116,6 +118,7 @@ namespace API.Controllers
         /// Create new item
         /// </summary>
         [HttpPost]
+        [Authorize(Roles = nameof(RoleEnum.Admin) + "," + nameof(RoleEnum.Staff))]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<ItemDto>> CreateItem([FromBody] CreateItemDto createItemDto)
@@ -126,7 +129,7 @@ namespace API.Controllers
                     return BadRequest(ModelState);
 
                 var createdItem = await _itemService.CreateItemAsync(createItemDto);
-                return CreatedAtAction(nameof(GetItemById), new { id = createdItem.ItemId }, createdItem);
+                return CreatedAtAction(nameof(GetItemById), new { id = createdItem.Id }, createdItem);
             }
             catch (Exception ex)
             {
@@ -139,6 +142,7 @@ namespace API.Controllers
         /// Update existing item
         /// </summary>
         [HttpPut("{id}")]
+        [Authorize(Roles = nameof(RoleEnum.Admin) + "," + nameof(RoleEnum.Staff))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<ItemDto>> UpdateItem(Guid id, [FromBody] UpdateItemDto updateItemDto)
@@ -165,6 +169,7 @@ namespace API.Controllers
         /// Delete item
         /// </summary>
         [HttpDelete("{id}")]
+        [Authorize(Roles = nameof(RoleEnum.Admin) + "," + nameof(RoleEnum.Staff))]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteItem(Guid id)
