@@ -71,7 +71,7 @@ namespace API.Controllers
             {
                 var filter = new ItemFilterDto
                 {
-                    Status = status,
+
                     UserId = userId,
                     CategoryId = categoryId,
                     LocationId = locationId,
@@ -121,11 +121,11 @@ namespace API.Controllers
         [ProducesResponseType(typeof(ApiResponse<ItemDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<ApiResponse<ItemDto>>> CreateItem(
-    [FromForm] CreateItemDto createItemDto)
+             [FromForm] CreateItemDto createItemDto, IFormFile file)
         {
 
 
-            var createdItem = await _itemService.CreateItemAsync(createItemDto);
+            var createdItem = await _itemService.CreateItemAsync(createItemDto, file);
 
             return CreatedAtAction(
                 nameof(GetItemById),

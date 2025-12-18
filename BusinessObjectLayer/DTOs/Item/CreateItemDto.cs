@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace BusinessObjectLayer.DTOs.Item
 {
@@ -15,9 +14,6 @@ namespace BusinessObjectLayer.DTOs.Item
         [Required(ErrorMessage = "Category is required")]
         public Guid CategoryId { get; set; }
 
-        [StringLength(50)]
-        public string? Status { get; set; }
-
         public string? FoundLocation { get; set; }
 
         public Guid? CurrentLocationId { get; set; }
@@ -26,8 +22,5 @@ namespace BusinessObjectLayer.DTOs.Item
 
         public DateTime? FoundDate { get; set; }
 
-        // ✅ BẮT BUỘC: FILE NẰM TRONG DTO
-        [Required(ErrorMessage = "Image file is required")]
-        public IFormFile File { get; set; } = null!;
     }
 }
