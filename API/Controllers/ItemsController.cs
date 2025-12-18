@@ -45,8 +45,8 @@ namespace API.Controllers
         /// <param name="categoryId">Filter by category ID</param>
         /// <param name="locationId">Filter by location ID</param>
         /// <param name="searchTerm">Search in item name and description</param>
-        /// <param name="fromDate">Filter from date (YYYY-MM-DD)</param>
-        /// <param name="toDate">Filter to date (YYYY-MM-DD)</param>
+        /// <param name="fromDate">Filter from date (YYYY-MM-DD HH:mm:ss)</param>
+        /// <param name="toDate">Filter to date (YYYY-MM-DD HH:mm:ss)</param>
         /// <param name="pageNumber">Page number (default: 1)</param>
         /// <param name="pageSize">Items per page (default: 10)</param>
         /// <returns>Paginated list of filtered items</returns>
@@ -59,8 +59,8 @@ namespace API.Controllers
             [FromQuery] Guid? categoryId = null,
             [FromQuery] Guid? locationId = null,
             [FromQuery] string? searchTerm = null,
-            [FromQuery] DateOnly? fromDate = null,
-            [FromQuery] DateOnly? toDate = null,
+            [FromQuery] DateTime? fromDate = null,
+            [FromQuery] DateTime? toDate = null,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10)
         {
@@ -126,7 +126,7 @@ namespace API.Controllers
                     return BadRequest(ModelState);
 
                 var createdItem = await _itemService.CreateItemAsync(createItemDto);
-                return CreatedAtAction(nameof(GetItemById), new { id = createdItem.ItemId }, createdItem);
+                return CreatedAtAction(nameof(GetItemById), new { id = createdItem.Id }, createdItem);
             }
             catch (Exception ex)
             {

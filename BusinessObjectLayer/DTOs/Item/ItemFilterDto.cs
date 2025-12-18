@@ -13,8 +13,8 @@ namespace BusinessObjectLayer.DTOs.Item
         public Guid? CategoryId { get; set; }
         public Guid? LocationId { get; set; }
         public string? SearchTerm { get; set; }
-        public DateOnly? FromDate { get; set; }
-        public DateOnly? ToDate { get; set; }
+        public DateTime? FromDate { get; set; }
+        public DateTime? ToDate { get; set; }
 
         // Pagination
         public int PageNumber { get; set; } = 1;

@@ -14,50 +14,65 @@ namespace Repository
         {
         }
 
-        public async Task<List<Upload>> GetByItemIdAsync(Guid itemId)
+        public async Task<Upload?> GetByIdWithDetailsAsync(Guid uploadId)
         {
             return await _context.Uploads
-                .Include(u => u.Item)
-                .Where(u => u.ItemId == itemId)
-                .ToListAsync();
-        }
-
-        public async Task<Upload?> GetByIdWithItemAsync(Guid uploadId)
-        {
-            return await _context.Uploads
-                .Include(u => u.Item)
-                .FirstOrDefaultAsync(u => u.UploadId == uploadId);
+                .Include(u => u.Category)
+                .Include(u => u.User)
+                .Include(u => u.Staff)
+                .FirstOrDefaultAsync(u => u.Id == uploadId);
         }
 
         public async Task<List<Upload>> GetByStatusAsync(string status)
         {
             return await _context.Uploads
-                .Include(u => u.Item)
+                .Include(u => u.Category)
+                .Include(u => u.User)
+                .Include(u => u.Staff)
                 .Where(u => u.Status == status)
+                .ToListAsync();
+        }
+
+        public async Task<List<Upload>> GetByUserIdAsync(Guid userId)
+        {
+            return await _context.Uploads
+                .Include(u => u.Category)
+                .Include(u => u.User)
+                .Include(u => u.Staff)
+                .Where(u => u.Userid == userId)
+                .ToListAsync();
+        }
+
+        public async Task<List<Upload>> GetByCategoryIdAsync(Guid categoryId)
+        {
+            return await _context.Uploads
+                .Include(u => u.Category)
+                .Include(u => u.User)
+                .Include(u => u.Staff)
+                .Where(u => u.CategoryId == categoryId)
                 .ToListAsync();
         }
 
         public async Task<bool> ExistsAsync(Guid uploadId)
         {
-            return await _context.Uploads.AnyAsync(u => u.UploadId == uploadId);
+            return await _context.Uploads.AnyAsync(u => u.Id == uploadId);
         }
 
-        public async Task<bool> ItemExistsAsync(Guid itemId)
-        {
-            return await _context.Items.AnyAsync(i => i.ItemId == itemId);
-        }
-
-        public async Task<List<Upload>> GetAllWithItemAsync()
+        public async Task<List<Upload>> GetAllWithDetailsAsync()
         {
             return await _context.Uploads
-                .Include(u => u.Item)
+                .Include(u => u.Category)
+                .Include(u => u.User)
+                .Include(u => u.Staff)
                 .ToListAsync();
         }
 
         public async Task<List<Upload>> SearchUploadsAsync(
             string? status = null,
-            string? statusAccept = null,
-            Guid? itemId = null,
+            Guid? userId = null,
+            Guid? categoryId = null,
+            Guid? staffId = null,
+            string? type = null,
             string? searchTerm = null,
             DateTime? fromDate = null,
             DateTime? toDate = null,
@@ -65,33 +80,41 @@ namespace Repository
             int pageSize = 10)
         {
             var query = _context.Uploads
-                .Include(u => u.Item)
+                .Include(u => u.Category)
+                .Include(u => u.User)
+                .Include(u => u.Staff)
                 .AsQueryable();
 
             // Apply filters
             if (!string.IsNullOrEmpty(status))
                 query = query.Where(u => u.Status == status);
 
-            if (!string.IsNullOrEmpty(statusAccept))
-                query = query.Where(u => u.StatusAccept == statusAccept);
+            if (userId.HasValue)
+                query = query.Where(u => u.Userid == userId.Value);
 
-            if (itemId.HasValue)
-                query = query.Where(u => u.ItemId == itemId.Value);
+            if (categoryId.HasValue)
+                query = query.Where(u => u.CategoryId == categoryId.Value);
+
+            if (staffId.HasValue)
+                query = query.Where(u => u.Staffid == staffId.Value);
+
+            if (!string.IsNullOrEmpty(type))
+                query = query.Where(u => u.Type == type);
 
             if (!string.IsNullOrEmpty(searchTerm))
                 query = query.Where(u =>
-                    u.Item != null &&
-                    u.Item.ItemName.Contains(searchTerm));
+                    u.Name.Contains(searchTerm) ||
+                    (u.Description != null && u.Description.Contains(searchTerm)));
 
             if (fromDate.HasValue)
-                query = query.Where(u => u.UploadTime >= fromDate.Value);
+                query = query.Where(u => u.LostDate >= fromDate.Value);
 
             if (toDate.HasValue)
-                query = query.Where(u => u.UploadTime <= toDate.Value);
+                query = query.Where(u => u.LostDate <= toDate.Value);
 
             // Pagination
             query = query
-                .OrderByDescending(u => u.UploadTime)
+                .OrderByDescending(u => u.DateCreate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize);
 
@@ -100,8 +123,10 @@ namespace Repository
 
         public async Task<int> CountUploadsAsync(
             string? status = null,
-            string? statusAccept = null,
-            Guid? itemId = null,
+            Guid? userId = null,
+            Guid? categoryId = null,
+            Guid? staffId = null,
+            string? type = null,
             string? searchTerm = null,
             DateTime? fromDate = null,
             DateTime? toDate = null)
@@ -111,22 +136,28 @@ namespace Repository
             if (!string.IsNullOrEmpty(status))
                 query = query.Where(u => u.Status == status);
 
-            if (!string.IsNullOrEmpty(statusAccept))
-                query = query.Where(u => u.StatusAccept == statusAccept);
+            if (userId.HasValue)
+                query = query.Where(u => u.Userid == userId.Value);
 
-            if (itemId.HasValue)
-                query = query.Where(u => u.ItemId == itemId.Value);
+            if (categoryId.HasValue)
+                query = query.Where(u => u.CategoryId == categoryId.Value);
+
+            if (staffId.HasValue)
+                query = query.Where(u => u.Staffid == staffId.Value);
+
+            if (!string.IsNullOrEmpty(type))
+                query = query.Where(u => u.Type == type);
 
             if (!string.IsNullOrEmpty(searchTerm))
                 query = query.Where(u =>
-                    u.Item != null &&
-                    u.Item.ItemName.Contains(searchTerm));
+                    u.Name.Contains(searchTerm) ||
+                    (u.Description != null && u.Description.Contains(searchTerm)));
 
             if (fromDate.HasValue)
-                query = query.Where(u => u.UploadTime >= fromDate.Value);
+                query = query.Where(u => u.LostDate >= fromDate.Value);
 
             if (toDate.HasValue)
-                query = query.Where(u => u.UploadTime <= toDate.Value);
+                query = query.Where(u => u.LostDate <= toDate.Value);
 
             return await query.CountAsync();
         }

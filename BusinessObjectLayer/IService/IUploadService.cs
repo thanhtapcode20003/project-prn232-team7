@@ -8,8 +8,8 @@ namespace BusinessObjectLayer.IService
     {
         Task<List<UploadDto>> GetAllUploadsAsync();
         Task<UploadDto?> GetUploadByIdAsync(Guid uploadId);
-        Task<List<UploadDto>> GetUploadsByItemIdAsync(Guid itemId);
-        Task<UploadDto> UploadFileAsync(Guid itemId, IFormFile file, string status = "Pending", string? statusAccept = null);
+        Task<List<UploadDto>> GetUploadsByCategoryIdAsync(Guid categoryId);
+        Task<UploadDto> UploadFileAsync(CreateUploadDto createUploadDto, IFormFile file);
         Task<UploadDto?> UpdateUploadAsync(Guid uploadId, UpdateUploadDto updateUploadDto);
         Task<bool> DeleteUploadAsync(Guid uploadId);
         Task<bool> DeleteFileAsync(string fileUrl);

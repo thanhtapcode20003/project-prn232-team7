@@ -24,8 +24,8 @@ namespace API.Controllers
         public async Task<ActionResult<PagedResult<ReturnRecordDto>>> GetAllReturnRecords(
             [FromQuery] string? status = null,
             [FromQuery] Guid? itemId = null,
-            [FromQuery] Guid? foundUserId = null,
-            [FromQuery] Guid? receiverUserId = null,
+            [FromQuery] Guid? staffId = null,
+            [FromQuery] Guid? userId = null,
             [FromQuery] DateTime? fromDate = null,
             [FromQuery] DateTime? toDate = null,
             [FromQuery] string? searchTerm = null,
@@ -38,8 +38,8 @@ namespace API.Controllers
                 {
                     Status = status,
                     ItemId = itemId,
-                    FoundUserId = foundUserId,
-                    ReceiverUserId = receiverUserId,
+                    StaffId = staffId,
+                    UserId = userId,
                     FromDate = fromDate,
                     ToDate = toDate,
                     SearchTerm = searchTerm,
@@ -89,7 +89,7 @@ namespace API.Controllers
                     return BadRequest(ModelState);
 
                 var createdReturnRecord = await _returnRecordService.CreateReturnRecordAsync(createReturnRecordDto);
-                return CreatedAtAction(nameof(GetReturnRecordById), new { id = createdReturnRecord.ReturnId }, createdReturnRecord);
+                return CreatedAtAction(nameof(GetReturnRecordById), new { id = createdReturnRecord.Id }, createdReturnRecord);
             }
             catch (NotFoundException ex)
             {

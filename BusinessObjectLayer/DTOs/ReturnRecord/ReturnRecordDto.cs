@@ -4,17 +4,23 @@ namespace BusinessObjectLayer.DTOs.ReturnRecord
 {
     public class ReturnRecordDto
     {
-        public Guid ReturnId { get; set; }
+        public Guid Id { get; set; }
         public Guid ItemId { get; set; }
-        public Guid FoundUserId { get; set; }
-        public Guid? ReceiverUserId { get; set; }
-        public DateTime ReturnDate { get; set; }
-        public string Status { get; set; } = null!;
+        public Guid StaffId { get; set; }
+        public Guid UserId { get; set; }
+        public string? ImgCccdFont { get; set; }
+        public string? ImgCccdBack { get; set; }
+        public string? EvidenceImg { get; set; }
+        public string? ConfirmImg { get; set; }
+        public string? VerifyNotes { get; set; }
+        public string? Status { get; set; }
+        public DateTime? DateCreated { get; set; }
+        public DateTime? DateUpdate { get; set; }
 
         // Navigation properties
         public string? ItemName { get; set; }
-        public string? FoundUserName { get; set; }
-        public string? ReceiverUserName { get; set; }
+        public string? StaffName { get; set; }
+        public string? UserName { get; set; }
     }
 }
 
