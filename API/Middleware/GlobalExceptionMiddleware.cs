@@ -59,10 +59,10 @@ public class GlobalExceptionMiddleware
             ArgumentException argEx =>
                 ApiError.BadRequest(argEx.Message),
 
-            // Default to 500
+            // Default to 500. In development include full exception details (including inner exceptions)
             _ => ApiError.InternalServerError(
                 _env.IsDevelopment() ? exception.Message : "An unexpected error occurred",
-                _env.IsDevelopment() ? exception.StackTrace : null)
+                _env.IsDevelopment() ? exception.ToString() : null)
         };
 
         context.Response.StatusCode = error.StatusCode;

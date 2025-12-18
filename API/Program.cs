@@ -1,14 +1,12 @@
-﻿using DataAccessLayer.DbContxts;
-using Microsoft.EntityFrameworkCore;
-using API.Middleware;
+﻿using API.Middleware;
 using BusinessObjectLayer.IService;
 using BusinessObjectLayer.Services;
-using Repository;
+using DataAccessLayer.DbContxts;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using Microsoft.OpenApi.Models;
-using Microsoft.AspNetCore.Http;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -63,7 +61,7 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 // Configure Database
-builder.Services.AddDbContext<LostAndFoundSystemDbContext>(options =>
+builder.Services.AddDbContext<LostAndFoundDbContext>(options =>
 {
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection"),
@@ -113,22 +111,26 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// ========== Register Repositories ==========
-builder.Services.AddScoped<ItemRepository>();
-builder.Services.AddScoped<UploadRepository>();
-builder.Services.AddScoped<ReturnRecordRepository>();
-// Thêm các repository khác ở đây nếu cần
-// builder.Services.AddScoped<CategoryRepository>();
-// builder.Services. AddScoped<UserRepository>();
-
 // ========== Register Services from BusinessObjectLayer ==========
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ICampusService, CampusService>();
+builder.Services.AddScoped<IServiceLocationService, ServiceLocationService>();
 builder.Services.AddScoped<IItemService, ItemService>();  // ✅ Thêm dòng này
-builder.Services.AddScoped<IUploadService, UploadService>();
+//builder.Services.AddScoped<IUploadService, UploadService>();
 builder.Services.AddScoped<IReturnRecordService, ReturnRecordService>();
 // Thêm các service khác ở đây nếu cần
 // builder.Services.AddScoped<ICategoryService, CategoryService>();
 // builder.Services.AddScoped<IUserService, UserService>();
+
+// Register generic repository and concrete repositories so DI can supply repositories with the DbContext
+builder.Services.AddScoped<ICategoriesService, CategoriesService>();
+builder.Services.AddScoped(typeof(Repository.GenericRepository<>));
+builder.Services.AddScoped<Repository.UploadRepository>();
+builder.Services.AddScoped<Repository.ItemRepository>();
+
+
+
+
 
 // Configure CORS if needed
 builder.Services.AddCors(options =>

@@ -1,23 +1,19 @@
 ﻿using DataAccessLayer.DbContxts;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Linq.Expressions;
 
 namespace Repository
 {
     public class GenericRepository<T> where T : class
     {
-        protected LostAndFoundSystemDbContext _context;
+        protected LostAndFoundDbContext _context;
 
         public GenericRepository()
         {
-            _context ??= new LostAndFoundSystemDbContext();
+            _context ??= new LostAndFoundDbContext();
         }
 
-        public GenericRepository(LostAndFoundSystemDbContext context)
+        public GenericRepository(LostAndFoundDbContext context)
         {
             _context = context;
         }
@@ -130,6 +126,11 @@ namespace Repository
         public async Task<int> SaveAsync()
         {
             return await _context.SaveChangesAsync();
+        }
+
+        public async Task<List<T>> FindAsync(Expression<Func<T, bool>> predicate)
+        {
+            return await _context.Set<T>().Where(predicate).ToListAsync();
         }
 
         #endregion Separating asign entity and save operators

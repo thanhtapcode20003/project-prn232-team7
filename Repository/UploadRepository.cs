@@ -1,8 +1,6 @@
 using DataAccessLayer.DbContxts;
 using DataAccessLayer.Models;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Linq;
 
 namespace Repository
 {
@@ -12,7 +10,7 @@ namespace Repository
         {
         }
 
-        public UploadRepository(LostAndFoundSystemDbContext context) : base(context)
+        public UploadRepository(LostAndFoundDbContext context) : base(context)
         {
         }
 
@@ -81,8 +79,8 @@ namespace Repository
                 query = query.Where(u => u.ItemId == itemId.Value);
 
             if (!string.IsNullOrEmpty(searchTerm))
-                query = query.Where(u => 
-                    u.Item != null && 
+                query = query.Where(u =>
+                    u.Item != null &&
                     u.Item.ItemName.Contains(searchTerm));
 
             if (fromDate.HasValue)
@@ -120,8 +118,8 @@ namespace Repository
                 query = query.Where(u => u.ItemId == itemId.Value);
 
             if (!string.IsNullOrEmpty(searchTerm))
-                query = query.Where(u => 
-                    u.Item != null && 
+                query = query.Where(u =>
+                    u.Item != null &&
                     u.Item.ItemName.Contains(searchTerm));
 
             if (fromDate.HasValue)

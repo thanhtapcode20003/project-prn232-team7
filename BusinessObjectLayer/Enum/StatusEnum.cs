@@ -15,6 +15,4 @@ namespace BusinessObjectLayer.Enum
         APPROVED,
         REJECTED
     }
-
-
 }
