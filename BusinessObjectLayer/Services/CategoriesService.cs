@@ -26,7 +26,7 @@ namespace BusinessObjectLayer.Services
             {
                 Name = request.Name,
                 Description = request.Description,
-                Status = request.Status
+                Status = StatusEnum.ACTIVE.ToString(),
 
             };
             await _categoriesRepository.CreateAsync(newCate);
