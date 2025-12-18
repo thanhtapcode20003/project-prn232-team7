@@ -53,12 +53,33 @@ namespace BusinessObjectLayer.Services
 
             ValidateFile(file);
 
+            // Validate Category exists
+            var checkCate = await _context.Categories
+                .FirstOrDefaultAsync(c => c.Id == createItemDto.CategoryId && c.Status == StatusEnum.ACTIVE.ToString());
+            if (checkCate == null)
+            {
+                throw new NotFoundException("Category", createItemDto.CategoryId.ToString());
+            }
+
+            // Validate Location if provided
+            ServiceLocation? checkLocation = null;
+            if (createItemDto.CurrentLocationId.HasValue)
+            {
+                checkLocation = await _context.ServiceLocations
+                    .FirstOrDefaultAsync(l => l.Id == createItemDto.CurrentLocationId.Value && l.Status == StatusEnum.ACTIVE.ToString());
+                if (checkLocation == null)
+                {
+                    throw new NotFoundException("ServiceLocation", createItemDto.CurrentLocationId.Value.ToString());
+                }
+            }
+
             // Create uploads directory if it doesn't exist
             var uploadsPath = Path.Combine(_environment.WebRootPath ?? _environment.ContentRootPath, UploadFolder);
             if (!Directory.Exists(uploadsPath))
             {
                 Directory.CreateDirectory(uploadsPath);
             }
+
             var fileExtension = Path.GetExtension(file.FileName);
             var fileName = $"{Guid.NewGuid()}{fileExtension}";
             var filePath = Path.Combine(uploadsPath, fileName);
@@ -69,35 +90,22 @@ namespace BusinessObjectLayer.Services
                 await file.CopyToAsync(stream);
             }
 
-            // Generate file URL
-            var fileUrl = $"/{UploadFolder}/{fileName}";
-            var checkCate = await _context.Categories.FindAsync(createItemDto.CategoryId);
-            if (checkCate == null)
-            {
-                throw new NotFoundException("CategoryId not found");
-            }
-            var checkLocation = await _context.ServiceLocations.FindAsync(createItemDto.CurrentLocationId);
-            if (checkLocation == null)
-            {
-                throw new NotFoundException("CurrentLocationId not found");
-            }
             var item = new Item
             {
                 Id = Guid.NewGuid(),
                 Name = createItemDto.Name,
                 Description = createItemDto.Description,
-                Img = fileName, // ✅ lưu path hoặc filename
+                Img = fileName,
                 CategoryId = checkCate.Id,
                 Status = StatusEnum.ACTIVE.ToString(),
                 Date = DateTime.UtcNow,
                 FoundLocation = createItemDto.FoundLocation,
-                CurrentLocationId = checkLocation.Id,
+                CurrentLocationId = checkLocation?.Id,
                 Context = createItemDto.Context,
                 UserId = user.Id,
                 FoundDate = createItemDto.FoundDate
             };
 
-            // 7. Save DB
             await _itemRepository.CreateAsync(item);
 
             var createdItem = await _itemRepository.GetByIdWithDetailsAsync(item.Id);
@@ -109,17 +117,39 @@ namespace BusinessObjectLayer.Services
         {
             var existingItem = await _itemRepository.GetByIdAsync(id);
             if (existingItem == null)
-                return null;
+                throw new NotFoundException("Item", id.ToString());
+
             var user = GetCurrentUser();
-            if (!user.Equals(existingItem.User))
+            
+            // Check authorization
+            if (existingItem.UserId.HasValue && existingItem.UserId != user.Id)
             {
-                throw new UnauthorizedException("it not of you");
+                throw new UnauthorizedException("You do not have permission to update this item");
             }
+
+            // Validate Category exists
+            var checkCate = await _context.Categories
+                .FirstOrDefaultAsync(c => c.Id == updateItemDto.CategoryId && c.Status == StatusEnum.ACTIVE.ToString());
+            if (checkCate == null)
+            {
+                throw new NotFoundException("Category", updateItemDto.CategoryId.ToString());
+            }
+
+            // Validate Location if provided
+            if (updateItemDto.CurrentLocationId.HasValue)
+            {
+                var checkLocation = await _context.ServiceLocations
+                    .FirstOrDefaultAsync(l => l.Id == updateItemDto.CurrentLocationId.Value && l.Status == StatusEnum.ACTIVE.ToString());
+                if (checkLocation == null)
+                {
+                    throw new NotFoundException("ServiceLocation", updateItemDto.CurrentLocationId.Value.ToString());
+                }
+            }
+
             existingItem.Name = updateItemDto.Name;
             existingItem.Description = updateItemDto.Description;
             existingItem.Img = updateItemDto.Img;
             existingItem.CategoryId = updateItemDto.CategoryId;
-
             existingItem.FoundLocation = updateItemDto.FoundLocation;
             existingItem.CurrentLocationId = updateItemDto.CurrentLocationId;
             existingItem.Context = updateItemDto.Context;
@@ -133,23 +163,25 @@ namespace BusinessObjectLayer.Services
         public async Task<bool> DeleteItemAsync(Guid id)
         {
             var item = await _itemRepository.GetByIdAsync(id);
-            var user = GetCurrentUser();
-            if (!user.Equals(item.User))
-            {
-                throw new UnauthorizedException("it not of you");
-            }
             if (item == null)
-                return false;
+                throw new NotFoundException("Item", id.ToString());
+
+            var user = GetCurrentUser();
+            
+            // Check authorization
+            if (item.UserId.HasValue && item.UserId != user.Id)
+            {
+                throw new UnauthorizedException("You do not have permission to delete this item");
+            }
 
             await _itemRepository.RemoveAsync(item);
             return true;
         }
 
-        // ✅ Unified Search Method with Pagination
         public async Task<PagedResult<ItemDto>> SearchItemsAsync(ItemFilterDto filter)
         {
             var items = await _itemRepository.SearchItemsAsync(
-
+                userId: filter.UserId,
                 categoryId: filter.CategoryId,
                 locationId: filter.LocationId,
                 searchTerm: filter.SearchTerm,
@@ -160,7 +192,7 @@ namespace BusinessObjectLayer.Services
             );
 
             var totalCount = await _itemRepository.CountItemsAsync(
-
+                userId: filter.UserId,
                 categoryId: filter.CategoryId,
                 locationId: filter.LocationId,
                 searchTerm: filter.SearchTerm,
@@ -177,7 +209,6 @@ namespace BusinessObjectLayer.Services
             };
         }
 
-        // ✅ Single MapToDto method
         private void ValidateFile(IFormFile file)
         {
             if (file == null || file.Length == 0)
@@ -196,6 +227,7 @@ namespace BusinessObjectLayer.Services
                 throw new ArgumentException($"File type not allowed. Allowed types: {string.Join(", ", AllowedExtensions)}");
             }
         }
+
         private ItemDto MapToDto(Item item)
         {
             return new ItemDto
@@ -210,13 +242,14 @@ namespace BusinessObjectLayer.Services
                 FoundLocation = item.FoundLocation,
                 CurrentLocationId = item.CurrentLocationId,
                 Context = item.Context,
-                UserId = item.UserId,
+                UserId = item.UserId ?? Guid.Empty,
                 FoundDate = item.FoundDate,
                 CategoryName = item.Category?.Name,
                 CurrentLocationName = item.CurrentLocation?.Name,
                 UserName = item.User?.Username
             };
         }
+
         public User GetCurrentUser()
         {
             var userIdClaim = _httpContextAccessor.HttpContext?.User

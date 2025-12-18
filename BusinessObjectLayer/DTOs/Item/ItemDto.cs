@@ -18,7 +18,7 @@ namespace BusinessObjectLayer.DTOs.Item
         public string? FoundLocation { get; set; }
         public Guid? CurrentLocationId { get; set; }
         public string? Context { get; set; }
-        public Guid UserId { get; set; }
+        public Guid? UserId { get; set; }
         public DateTime? FoundDate { get; set; }
 
         // Navigation properties

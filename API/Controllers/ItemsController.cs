@@ -99,19 +99,11 @@ namespace API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<ItemDto>> GetItemById(Guid id)
         {
-            try
-            {
-                var item = await _itemService.GetItemByIdAsync(id);
-                if (item == null)
-                    return NotFound(new { message = $"Item with ID {id} not found" });
+            var item = await _itemService.GetItemByIdAsync(id);
+            if (item == null)
+                return NotFound(new { message = $"Item with ID {id} not found" });
 
-                return Ok(item);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting item {ItemId}", id);
-                return StatusCode(500, new { message = "An error occurred" });
-            }
+            return Ok(item);
         }
 
         [HttpPost]
@@ -122,8 +114,6 @@ namespace API.Controllers
         public async Task<ActionResult<ApiResponse<ItemDto>>> CreateItem(
              [FromForm] CreateItemDto createItemDto, IFormFile file)
         {
-
-
             var createdItem = await _itemService.CreateItemAsync(createItemDto, file);
 
             return CreatedAtAction(
@@ -141,24 +131,17 @@ namespace API.Controllers
         [Authorize(Roles = nameof(RoleEnum.Admin) + "," + nameof(RoleEnum.Staff))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<ItemDto>> UpdateItem(Guid id, [FromBody] UpdateItemDto updateItemDto)
         {
-            try
-            {
-                if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-                var updatedItem = await _itemService.UpdateItemAsync(id, updateItemDto);
-                if (updatedItem == null)
-                    return NotFound(new { message = $"Item with ID {id} not found" });
+            var updatedItem = await _itemService.UpdateItemAsync(id, updateItemDto);
+            if (updatedItem == null)
+                return NotFound(new { message = $"Item with ID {id} not found" });
 
-                return Ok(updatedItem);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating item {ItemId}", id);
-                return StatusCode(500, new { message = "An error occurred" });
-            }
+            return Ok(updatedItem);
         }
 
         /// <summary>
@@ -168,21 +151,14 @@ namespace API.Controllers
         [Authorize(Roles = nameof(RoleEnum.Admin) + "," + nameof(RoleEnum.Staff))]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> DeleteItem(Guid id)
         {
-            try
-            {
-                var result = await _itemService.DeleteItemAsync(id);
-                if (!result)
-                    return NotFound(new { message = $"Item with ID {id} not found" });
+            var result = await _itemService.DeleteItemAsync(id);
+            if (!result)
+                return NotFound(new { message = $"Item with ID {id} not found" });
 
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error deleting item {ItemId}", id);
-                return StatusCode(500, new { message = "An error occurred" });
-            }
+            return NoContent();
         }
     }
 }

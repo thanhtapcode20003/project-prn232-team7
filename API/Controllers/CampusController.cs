@@ -1,5 +1,4 @@
-﻿
-using BusinessObjectLayer.DTOs;
+﻿using BusinessObjectLayer.DTOs;
 using BusinessObjectLayer.DTOs.Campus;
 using BusinessObjectLayer.Exceptions;
 using BusinessObjectLayer.IService;
@@ -8,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers
 {
-    [Route("api/campus")]
+    [Route("api/campuses")]
     [ApiController]
     public class CampusController : ControllerBase
     {
@@ -19,18 +18,24 @@ namespace API.Controllers
             _campusService = campusService;
         }
 
-        [HttpGet("")]
+        /// <summary>
+        /// GET /api/campuses - Get all campuses
+        /// </summary>
+        [HttpGet]
         public async Task<IActionResult> GetAllCampuses()
         {
             var campuses = await _campusService.GetAllCampuses();
             return Ok(ApiResponse<List<CampusResponse>>.Ok(campuses, "Get all campuses successfully"));
         }
 
+        /// <summary>
+        /// GET /api/campuses/search - Search campuses with filters
+        /// </summary>
         [HttpGet("search")]
         public async Task<IActionResult> SearchCampuses(
-      [FromQuery] string? name = null,
-      [FromQuery] int page = 1,
-      [FromQuery] int pageSize = 10)
+            [FromQuery] string? name = null,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
         {
             var filter = new CampusFilterDto
             {
@@ -47,44 +52,60 @@ namespace API.Controllers
             ));
         }
 
-
-        [HttpGet("{campusId}")]
-        public async Task<IActionResult> GetCampusById([FromRoute] Guid campusId)
+        /// <summary>
+        /// GET /api/campuses/{id} - Get campus by ID
+        /// </summary>
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetCampusById([FromRoute] Guid id)
         {
-            var campus = await _campusService.GetCampusById(campusId);
+            var campus = await _campusService.GetCampusById(id);
             return Ok(ApiResponse<CampusResponse>.Ok(campus, "Get campus by id successfully"));
         }
 
-        [HttpPost("create")]
+        /// <summary>
+        /// POST /api/campuses - Create new campus
+        /// </summary>
+        [HttpPost]
         [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<CampusResponse>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateCampus([FromBody] CampusRequest campus)
         {
             var newCampus = await _campusService.CreateCampus(campus);
-            return Ok(ApiResponse<CampusResponse>.Ok(newCampus, "Campus created successfully"));
+            return CreatedAtAction(
+                nameof(GetCampusById),
+                new { id = newCampus.CampusId },
+                ApiResponse<CampusResponse>.Ok(newCampus, "Campus created successfully")
+            );
         }
 
-        [HttpDelete("delete")]
+        /// <summary>
+        /// PUT /api/campuses/{id} - Update existing campus
+        /// </summary>
+        [HttpPut("{id}")]
         [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<CampusResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> DeleteCampus([FromBody] Guid campusId)
+        public async Task<IActionResult> UpdateCampus([FromRoute] Guid id, [FromBody] CampusRequest campus)
         {
-            var delete = await _campusService.DeleteCampus(campusId);
-            return Ok(ApiResponse<bool>.Ok(delete, "Campus deleted successfully"));
-        }
-
-        [HttpPut("update/{campusId}")]
-        [Authorize]
-        [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateCampus([FromRoute] Guid campusId, [FromBody] CampusRequest campus)
-        {
-            var updatedCampus = await _campusService.UpdateCampus(campusId, campus);
+            var updatedCampus = await _campusService.UpdateCampus(id, campus);
             return Ok(ApiResponse<CampusResponse>.Ok(updatedCampus, "Campus updated successfully"));
         }
 
-
+        /// <summary>
+        /// DELETE /api/campuses/{id} - Delete campus
+        /// </summary>
+        [HttpDelete("{id}")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteCampus([FromRoute] Guid id)
+        {
+            var delete = await _campusService.DeleteCampus(id);
+            return NoContent();
+        }
     }
 }

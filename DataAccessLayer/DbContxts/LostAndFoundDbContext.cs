@@ -34,13 +34,13 @@ public partial class LostAndFoundDbContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=(local);Database=LostAndFoundDb;User Id=sa;Password=12345;TrustServerCertificate=True");
+        => optionsBuilder.UseSqlServer("Server=(local);Database=LostAndFoundDB;User Id=sa;Password=1234567890;TrustServerCertificate=True");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Campus>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__campus__3213E83FBB7EC1C8");
+            entity.HasKey(e => e.Id).HasName("PK__campus__3213E83FCFC8D4A5");
 
             entity.ToTable("campus", tb => tb.HasTrigger("trg_campus_update"));
 
@@ -70,7 +70,7 @@ public partial class LostAndFoundDbContext : DbContext
 
         modelBuilder.Entity<Category>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__categori__3213E83F7AD9C038");
+            entity.HasKey(e => e.Id).HasName("PK__categori__3213E83FF258CB03");
 
             entity.ToTable("categories", tb => tb.HasTrigger("trg_categories_update"));
 
@@ -97,7 +97,7 @@ public partial class LostAndFoundDbContext : DbContext
 
         modelBuilder.Entity<Item>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__item__3213E83F0550BC70");
+            entity.HasKey(e => e.Id).HasName("PK__item__3213E83F15CC9E5B");
 
             entity.ToTable("item");
 
@@ -137,16 +137,18 @@ public partial class LostAndFoundDbContext : DbContext
 
             entity.HasOne(d => d.CurrentLocation).WithMany(p => p.Items)
                 .HasForeignKey(d => d.CurrentLocationId)
+                .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("FK__item__current_lo__59FA5E80");
 
             entity.HasOne(d => d.User).WithMany(p => p.Items)
                 .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("FK__item__user_id__5AEE82B9");
         });
 
         modelBuilder.Entity<ReturnRecord>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__return_r__3213E83F7C7FD31F");
+            entity.HasKey(e => e.Id).HasName("PK__return_r__3213E83F983F807E");
 
             entity.ToTable("return_record", tb => tb.HasTrigger("trg_return_record_update"));
 
@@ -193,7 +195,7 @@ public partial class LostAndFoundDbContext : DbContext
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__roles__3213E83F3015AAEE");
+            entity.HasKey(e => e.Id).HasName("PK__roles__3213E83FFEBF4EF5");
 
             entity.ToTable("roles", tb => tb.HasTrigger("trg_roles_update"));
 
@@ -220,7 +222,7 @@ public partial class LostAndFoundDbContext : DbContext
 
         modelBuilder.Entity<ServiceLocation>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__service___3213E83FB7E578D2");
+            entity.HasKey(e => e.Id).HasName("PK__service___3213E83FC6A8A161");
 
             entity.ToTable("service_location", tb => tb.HasTrigger("trg_service_location_update"));
 
@@ -255,7 +257,7 @@ public partial class LostAndFoundDbContext : DbContext
 
         modelBuilder.Entity<Upload>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__upload__3213E83FEF2001ED");
+            entity.HasKey(e => e.Id).HasName("PK__upload__3213E83FCB59F80C");
 
             entity.ToTable("upload");
 
@@ -320,13 +322,13 @@ public partial class LostAndFoundDbContext : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__user__3213E83FC3F73A71");
+            entity.HasKey(e => e.Id).HasName("PK__user__3213E83F98960273");
 
             entity.ToTable("user");
 
-            entity.HasIndex(e => e.Gmail, "UQ__user__493D0C0AE642186B").IsUnique();
+            entity.HasIndex(e => e.Gmail, "UQ__user__493D0C0A89766914").IsUnique();
 
-            entity.HasIndex(e => e.Username, "UQ__user__F3DBC572B870BD09").IsUnique();
+            entity.HasIndex(e => e.Username, "UQ__user__F3DBC5724F5540CC").IsUnique();
 
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("(newid())")

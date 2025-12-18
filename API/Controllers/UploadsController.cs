@@ -80,6 +80,10 @@ namespace API.Controllers
             }
         }
 
+        /// <summary>
+        /// GET /api/uploads/category/{categoryId} - Get uploads by category
+        /// Alternative: Use query parameter GET /api/uploads?categoryId={id}
+        /// </summary>
         [HttpGet("category/{categoryId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -175,17 +179,28 @@ namespace API.Controllers
             }
         }
 
-        [HttpPost("send-notification/{uploadId}")]
+        /// <summary>
+        /// PUT /api/uploads/{id}/notification - Add or update notification for upload
+        /// RESTful: Use PUT to create or update the notification sub-resource
+        /// </summary>
+        [HttpPut("{id}/notification")]
         [Authorize(Roles = nameof(RoleEnum.Admin) + "," + nameof(RoleEnum.Staff))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> CreateNotification(
-        [FromRoute] Guid uploadId,
-        [FromBody] SendNotificationDTO send)
+        public async Task<IActionResult> UpsertNotification(
+            [FromRoute] Guid id,
+            [FromBody] SendNotificationDTO send)
         {
             try
             {
-                var result = await _uploadService.SendNotificationUpload(uploadId, send);
+                // Try to update first, if not exists then create
+                var result = await _uploadService.UpdateSendNotificationUpload(id, send);
+                
+                if (result == null)
+                {
+                    // If update returns null, try to create
+                    result = await _uploadService.SendNotificationUpload(id, send);
+                }
 
                 if (result == null)
                     return NotFound(new { message = "Upload not found" });
@@ -198,17 +213,20 @@ namespace API.Controllers
             }
         }
 
-        [HttpPut("send-notification/{uploadId}")]
+        /// <summary>
+        /// PATCH /api/uploads/{id}/notification - Partially update notification
+        /// </summary>
+        [HttpPatch("{id}/notification")]
         [Authorize(Roles = nameof(RoleEnum.Admin) + "," + nameof(RoleEnum.Staff))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateNotification(
-       [FromRoute] Guid uploadId,
-       [FromBody] SendNotificationDTO send)
+        public async Task<IActionResult> PatchNotification(
+            [FromRoute] Guid id,
+            [FromBody] SendNotificationDTO send)
         {
             try
             {
-                var result = await _uploadService.UpdateSendNotificationUpload(uploadId, send);
+                var result = await _uploadService.UpdateSendNotificationUpload(id, send);
 
                 if (result == null)
                     return NotFound(new { message = "Upload not found" });

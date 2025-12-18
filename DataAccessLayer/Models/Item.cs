@@ -25,7 +25,7 @@ public partial class Item
 
     public string? Context { get; set; }
 
-    public Guid UserId { get; set; }
+    public Guid? UserId { get; set; }
 
     public DateTime? FoundDate { get; set; }
 
@@ -35,5 +35,5 @@ public partial class Item
 
     public virtual ICollection<ReturnRecord> ReturnRecords { get; set; } = new List<ReturnRecord>();
 
-    public virtual User User { get; set; } = null!;
+    public virtual User? User { get; set; }
 }
