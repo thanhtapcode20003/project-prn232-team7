@@ -71,7 +71,7 @@ namespace BusinessObjectLayer.Services
         {
             try
             {
-                var list = await _serviceLocationrepository.GetAllAsync();
+                var list = await _serviceLocationrepository.GetAllByCampusIdAsync();
                 return list.Select(MapToDTO).ToList();
             }
             catch (Exception ex)
@@ -90,10 +90,8 @@ namespace BusinessObjectLayer.Services
         ============================ */
         public async Task<List<ServiceLocationResponse>> GetAllByCampusId(Guid campusId)
         {
-            var services = await _serviceLocationrepository
-                .FindAsync(s => s.CampusId == campusId);
-
-            return services.Select(MapToDTO).ToList();
+            var list = await _serviceLocationrepository.GetAllByCampusIdAsync();
+            return list.Select(MapToDTO).ToList();
         }
 
         /* ===========================
@@ -101,7 +99,7 @@ namespace BusinessObjectLayer.Services
         ============================ */
         public async Task<ServiceLocationResponse> GetById(Guid id)
         {
-            var serviceLocation = await _serviceLocationrepository.GetByIdAsync(id)
+            var serviceLocation = await _serviceLocationrepository.GetByIdWithCampusAsync(id)
                 ?? throw new NotFoundException("ServiceLocation", id.ToString());
 
             return MapToDTO(serviceLocation);

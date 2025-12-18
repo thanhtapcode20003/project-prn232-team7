@@ -21,11 +21,18 @@ namespace Repository
         {
             return await _context.ServiceLocations.AnyAsync(sl => sl.Id == serviceLocationId);
         }
-        public async Task<List<ServiceLocation>> GetAllWithCampusAsync()
+        public async Task<List<ServiceLocation>> GetAllByCampusIdAsync(Guid? campusId = null)
         {
-            return await _context.ServiceLocations
+            var query = _context.ServiceLocations
                 .Include(sl => sl.Campus)
-                .ToListAsync();
+                .AsQueryable();
+
+            if (campusId.HasValue)
+            {
+                query = query.Where(sl => sl.CampusId == campusId.Value);
+            }
+
+            return await query.ToListAsync();
         }
         public async Task<ServiceLocation?> GetByIdWithCampusAsync(Guid serviceLocationId)
         {
