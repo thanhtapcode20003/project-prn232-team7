@@ -111,6 +111,10 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 
 // ========== Register Services from BusinessObjectLayer ==========
+// register the IHttpContextAccessor so services can access HttpContext
+builder.Services.AddHttpContextAccessor();
+
+// existing registrations
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICampusService, CampusService>();
 builder.Services.AddScoped<IServiceLocationService, ServiceLocationService>();
@@ -127,7 +131,7 @@ builder.Services.AddScoped(typeof(Repository.GenericRepository<>));
 builder.Services.AddScoped<Repository.UploadRepository>();
 builder.Services.AddScoped<Repository.ItemRepository>();
 builder.Services.AddScoped<Repository.ServiceLocationrepository>();
-
+builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
 
 // Configure CORS if needed
