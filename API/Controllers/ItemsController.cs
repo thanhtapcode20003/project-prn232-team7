@@ -43,7 +43,6 @@ namespace API.Controllers
         /// <summary>
         /// Search/Filter items with multiple optional parameters
         /// </summary>
-        /// <param name="status">Filter by status</param>
         /// <param name="userId">Filter by user ID</param>
         /// <param name="categoryId">Filter by category ID</param>
         /// <param name="locationId">Filter by location ID</param>
@@ -70,7 +69,6 @@ namespace API.Controllers
             {
                 var filter = new ItemFilterDto
                 {
-
                     UserId = userId,
                     CategoryId = categoryId,
                     LocationId = locationId,
@@ -106,6 +104,9 @@ namespace API.Controllers
             return Ok(item);
         }
 
+        /// <summary>
+        /// Create new item with image upload
+        /// </summary>
         [HttpPost]
         [Consumes("multipart/form-data")]
         [Authorize(Roles = nameof(RoleEnum.Admin) + "," + nameof(RoleEnum.Staff))]
@@ -125,19 +126,24 @@ namespace API.Controllers
 
 
         /// <summary>
-        /// Update existing item
+        /// Update existing item with optional image upload
+        /// Fields left empty will retain their current values
         /// </summary>
         [HttpPut("{id}")]
+        [Consumes("multipart/form-data")]
         [Authorize(Roles = nameof(RoleEnum.Admin) + "," + nameof(RoleEnum.Staff))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<ActionResult<ItemDto>> UpdateItem(Guid id, [FromBody] UpdateItemDto updateItemDto)
+        public async Task<ActionResult<ItemDto>> UpdateItem(
+            Guid id, 
+            [FromForm] UpdateItemDto updateItemDto, 
+            IFormFile? file = null)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var updatedItem = await _itemService.UpdateItemAsync(id, updateItemDto);
+            var updatedItem = await _itemService.UpdateItemAsync(id, updateItemDto, file);
             if (updatedItem == null)
                 return NotFound(new { message = $"Item with ID {id} not found" });
 

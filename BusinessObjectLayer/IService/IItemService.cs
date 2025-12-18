@@ -8,7 +8,7 @@ namespace BusinessObjectLayer.IService
         Task<List<ItemDto>> GetAllItemsAsync();
         Task<ItemDto?> GetItemByIdAsync(Guid id);
         Task<ItemDto> CreateItemAsync(CreateItemDto createItemDto, IFormFile file);
-        Task<ItemDto?> UpdateItemAsync(Guid id, UpdateItemDto updateItemDto);
+        Task<ItemDto?> UpdateItemAsync(Guid id, UpdateItemDto updateItemDto, IFormFile? file = null);
         Task<bool> DeleteItemAsync(Guid id);
 
         // ✅ Method mới

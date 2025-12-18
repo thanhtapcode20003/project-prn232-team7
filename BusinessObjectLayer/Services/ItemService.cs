@@ -113,7 +113,7 @@ namespace BusinessObjectLayer.Services
             return MapToDto(createdItem!);
         }
 
-        public async Task<ItemDto?> UpdateItemAsync(Guid id, UpdateItemDto updateItemDto)
+        public async Task<ItemDto?> UpdateItemAsync(Guid id, UpdateItemDto updateItemDto, IFormFile? file = null)
         {
             var existingItem = await _itemRepository.GetByIdAsync(id);
             if (existingItem == null)
@@ -146,12 +146,65 @@ namespace BusinessObjectLayer.Services
                 }
             }
 
+            // Update Name (required field)
             existingItem.Name = updateItemDto.Name;
-            existingItem.Description = updateItemDto.Description;
+            
+            // Update Description only if provided (not null/empty), otherwise keep old value
+            if (!string.IsNullOrWhiteSpace(updateItemDto.Description))
+            {
+                existingItem.Description = updateItemDto.Description;
+            }
+            
+            // Update CategoryId (required field)
             existingItem.CategoryId = updateItemDto.CategoryId;
-            existingItem.FoundLocation = updateItemDto.FoundLocation;
+            
+            // Update FoundLocation only if not null/empty, otherwise keep old value
+            if (!string.IsNullOrWhiteSpace(updateItemDto.FoundLocation))
+            {
+                existingItem.FoundLocation = updateItemDto.FoundLocation;
+            }
+            
+            // Update CurrentLocationId (can be null)
             existingItem.CurrentLocationId = updateItemDto.CurrentLocationId;
+            
+            // Update FoundDate (can be null)
             existingItem.FoundDate = updateItemDto.FoundDate;
+
+            // Handle image upload if file is provided
+            if (file != null && file.Length > 0)
+            {
+                ValidateFile(file);
+
+                // Delete old image if exists
+                if (!string.IsNullOrEmpty(existingItem.Img))
+                {
+                    var oldImagePath = Path.Combine(_environment.WebRootPath ?? _environment.ContentRootPath, UploadFolder, existingItem.Img);
+                    if (File.Exists(oldImagePath))
+                    {
+                        File.Delete(oldImagePath);
+                    }
+                }
+
+                // Create uploads directory if it doesn't exist
+                var uploadsPath = Path.Combine(_environment.WebRootPath ?? _environment.ContentRootPath, UploadFolder);
+                if (!Directory.Exists(uploadsPath))
+                {
+                    Directory.CreateDirectory(uploadsPath);
+                }
+
+                // Save new image
+                var fileExtension = Path.GetExtension(file.FileName);
+                var fileName = $"{Guid.NewGuid()}{fileExtension}";
+                var filePath = Path.Combine(uploadsPath, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                existingItem.Img = fileName;
+            }
+            // If no file provided, keep the old image (existingItem.Img unchanged)
 
             await _itemRepository.UpdateAsync(existingItem);
             var updatedItem = await _itemRepository.GetByIdWithDetailsAsync(id);
