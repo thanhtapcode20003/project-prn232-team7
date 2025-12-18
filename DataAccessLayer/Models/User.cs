@@ -27,9 +27,7 @@ public partial class User
 
     public virtual ICollection<Item> Items { get; set; } = new List<Item>();
 
-    public virtual ICollection<ReturnRecord> ReturnRecordStaffs { get; set; } = new List<ReturnRecord>();
-
-    public virtual ICollection<ReturnRecord> ReturnRecordUsers { get; set; } = new List<ReturnRecord>();
+    public virtual ICollection<ReturnRecord> ReturnRecords { get; set; } = new List<ReturnRecord>();
 
     public virtual Role Role { get; set; } = null!;
 

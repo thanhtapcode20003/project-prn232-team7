@@ -11,8 +11,6 @@ public partial class ReturnRecord
 
     public Guid StaffId { get; set; }
 
-    public Guid UserId { get; set; }
-
     public string? ImgCccdFont { get; set; }
 
     public string? ImgCccdBack { get; set; }
@@ -32,6 +30,4 @@ public partial class ReturnRecord
     public virtual Item Item { get; set; } = null!;
 
     public virtual User Staff { get; set; } = null!;
-
-    public virtual User User { get; set; } = null!;
 }

@@ -1,4 +1,5 @@
 using BusinessObjectLayer.DTOs.ReturnRecord;
+using BusinessObjectLayer.Enum;
 using BusinessObjectLayer.Exceptions;
 using BusinessObjectLayer.IService;
 using DataAccessLayer.Models;
@@ -98,13 +99,13 @@ namespace BusinessObjectLayer.Services
                 Id = Guid.NewGuid(),
                 ItemId = dto.ItemId,
                 StaffId = user.Id,
-                UserId = dto.UserId,
+
                 ImgCccdFont = imgFontPath,
                 ImgCccdBack = imgBackPath,
                 EvidenceImg = evidencePath,
                 ConfirmImg = confirmPath,
                 VerifyNotes = dto.VerifyNotes,
-                Status = dto.Status ?? "PENDING",
+                Status = StatusEnum.ACTIVE.ToString(),
                 DateCreated = DateTime.UtcNow,
                 DateUpdate = DateTime.UtcNow
             };
@@ -216,7 +217,7 @@ namespace BusinessObjectLayer.Services
                 Id = record.Id,
                 ItemId = record.ItemId,
                 StaffId = record.StaffId,
-                UserId = record.UserId,
+
                 ImgCccdFont = record.ImgCccdFont,
                 ImgCccdBack = record.ImgCccdBack,
                 EvidenceImg = record.EvidenceImg,
@@ -227,7 +228,7 @@ namespace BusinessObjectLayer.Services
                 DateUpdate = record.DateUpdate,
                 ItemName = record.Item?.Name,
                 StaffName = record.Staff?.Username,
-                UserName = record.User?.Username
+
             };
         }
     }

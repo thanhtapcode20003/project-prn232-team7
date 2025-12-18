@@ -40,7 +40,7 @@ public partial class LostAndFoundDbContext : DbContext
     {
         modelBuilder.Entity<Campus>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__campus__3213E83F138A2398");
+            entity.HasKey(e => e.Id).HasName("PK__campus__3213E83FBB7EC1C8");
 
             entity.ToTable("campus", tb => tb.HasTrigger("trg_campus_update"));
 
@@ -70,7 +70,7 @@ public partial class LostAndFoundDbContext : DbContext
 
         modelBuilder.Entity<Category>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__categori__3213E83FD871D602");
+            entity.HasKey(e => e.Id).HasName("PK__categori__3213E83F7AD9C038");
 
             entity.ToTable("categories", tb => tb.HasTrigger("trg_categories_update"));
 
@@ -97,7 +97,7 @@ public partial class LostAndFoundDbContext : DbContext
 
         modelBuilder.Entity<Item>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__item__3213E83F72A91B6C");
+            entity.HasKey(e => e.Id).HasName("PK__item__3213E83F0550BC70");
 
             entity.ToTable("item");
 
@@ -146,7 +146,7 @@ public partial class LostAndFoundDbContext : DbContext
 
         modelBuilder.Entity<ReturnRecord>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__return_r__3213E83FA32B5A53");
+            entity.HasKey(e => e.Id).HasName("PK__return_r__3213E83F7C7FD31F");
 
             entity.ToTable("return_record", tb => tb.HasTrigger("trg_return_record_update"));
 
@@ -179,27 +179,21 @@ public partial class LostAndFoundDbContext : DbContext
                 .HasMaxLength(50)
                 .HasDefaultValue("ACTIVE")
                 .HasColumnName("status");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
             entity.Property(e => e.VerifyNotes).HasColumnName("verify_notes");
 
             entity.HasOne(d => d.Item).WithMany(p => p.ReturnRecords)
                 .HasForeignKey(d => d.ItemId)
                 .HasConstraintName("FK__return_re__item___6B24EA82");
 
-            entity.HasOne(d => d.Staff).WithMany(p => p.ReturnRecordStaffs)
+            entity.HasOne(d => d.Staff).WithMany(p => p.ReturnRecords)
                 .HasForeignKey(d => d.StaffId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__return_re__staff__6C190EBB");
-
-            entity.HasOne(d => d.User).WithMany(p => p.ReturnRecordUsers)
-                .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__return_re__user___6D0D32F4");
         });
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__roles__3213E83F292C1C30");
+            entity.HasKey(e => e.Id).HasName("PK__roles__3213E83F3015AAEE");
 
             entity.ToTable("roles", tb => tb.HasTrigger("trg_roles_update"));
 
@@ -226,7 +220,7 @@ public partial class LostAndFoundDbContext : DbContext
 
         modelBuilder.Entity<ServiceLocation>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__service___3213E83FE75B32F9");
+            entity.HasKey(e => e.Id).HasName("PK__service___3213E83FB7E578D2");
 
             entity.ToTable("service_location", tb => tb.HasTrigger("trg_service_location_update"));
 
@@ -261,7 +255,7 @@ public partial class LostAndFoundDbContext : DbContext
 
         modelBuilder.Entity<Upload>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__upload__3213E83FB79CD4F2");
+            entity.HasKey(e => e.Id).HasName("PK__upload__3213E83FEF2001ED");
 
             entity.ToTable("upload");
 
@@ -326,13 +320,13 @@ public partial class LostAndFoundDbContext : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__user__3213E83F31FF5236");
+            entity.HasKey(e => e.Id).HasName("PK__user__3213E83FC3F73A71");
 
             entity.ToTable("user");
 
-            entity.HasIndex(e => e.Gmail, "UQ__user__493D0C0AE88DBB60").IsUnique();
+            entity.HasIndex(e => e.Gmail, "UQ__user__493D0C0AE642186B").IsUnique();
 
-            entity.HasIndex(e => e.Username, "UQ__user__F3DBC57240A437F5").IsUnique();
+            entity.HasIndex(e => e.Username, "UQ__user__F3DBC572B870BD09").IsUnique();
 
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("(newid())")
