@@ -46,8 +46,10 @@ namespace BusinessObjectLayer.Services
         public async Task<PagedResult<ReturnRecordDto>> SearchAsync(ReturnRecordFilterDto filter)
         {
             var records = await _returnRecordRepository.SearchAsync(
-                status: StatusEnum.ACTIVE.ToString(),
-
+                status: filter.Status ?? StatusEnum.ACTIVE.ToString(),
+                userId: filter.UserId,
+                staffId: filter.StaffId,
+                itemId: filter.ItemId,
                 itemName: filter.NameItem,
                 fromDate: filter.FromDate,
                 toDate: filter.ToDate,
@@ -56,6 +58,10 @@ namespace BusinessObjectLayer.Services
             );
 
             var totalCount = await _returnRecordRepository.CountAsync(
+                status: filter.Status ?? StatusEnum.ACTIVE.ToString(),
+                userId: filter.UserId,
+                staffId: filter.StaffId,
+                itemId: filter.ItemId,
                 itemName: filter.NameItem,
                 fromDate: filter.FromDate,
                 toDate: filter.ToDate
@@ -83,11 +89,26 @@ namespace BusinessObjectLayer.Services
             var item = await _itemRepository.GetByIdAsync(dto.ItemId);
             if (item == null)
             {
-                throw new NotFoundException("Item not found with id", dto.ItemId.ToString());
+                throw new NotFoundException("Item", dto.ItemId.ToString());
             }
+
+            // Kiểm tra Item đã có ReturnRecord chưa
+            var existingRecord = await ExistsByItemIdAsync(dto.ItemId);
+            if (existingRecord)
+            {
+                throw new ApiException(ApiError.Conflict("This item already has a return record", $"Item ID: {dto.ItemId}"));
+            }
+
+            // Kiểm tra status của Item
             if (StatusEnum.ACTIVE.ToString() != item.Status)
             {
-                throw new BadHttpRequestException("item has reurned or delete");
+                var statusMessage = item.Status switch
+                {
+                    "RETURNED" => "This item has already been returned",
+                    "DELETED" => "This item has been deleted",
+                    _ => $"This item is not active. Current status: {item.Status}"
+                };
+                throw new ApiException(ApiError.BadRequest(statusMessage, $"Item ID: {dto.ItemId}, Status: {item.Status}"));
             }
 
             // Lưu file ảnh nếu có
@@ -234,6 +255,12 @@ namespace BusinessObjectLayer.Services
             }
         }
 
+        private async Task<bool> ExistsByItemIdAsync(Guid itemId)
+        {
+            return await _context.ReturnRecords
+                .AnyAsync(r => r.ItemId == itemId && r.Status != StatusEnum.DELETED.ToString());
+        }
+
         private ReturnRecordDto MapToDto(ReturnRecord record)
         {
             return new ReturnRecordDto
@@ -241,7 +268,7 @@ namespace BusinessObjectLayer.Services
                 Id = record.Id,
                 ItemId = record.ItemId,
                 StaffId = record.StaffId,
-
+                UserId = record.Item?.UserId ?? Guid.Empty,
                 ImgCccdFont = record.ImgCccdFont,
                 ImgCccdBack = record.ImgCccdBack,
                 EvidenceImg = record.EvidenceImg,
@@ -252,7 +279,7 @@ namespace BusinessObjectLayer.Services
                 DateUpdate = record.DateUpdate,
                 ItemName = record.Item?.Name,
                 StaffName = record.Staff?.Username,
-
+                UserName = record.Item?.User?.Username
             };
         }
     }
