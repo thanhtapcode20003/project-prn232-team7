@@ -1,5 +1,7 @@
 using BusinessObjectLayer.DTOs.Upload;
+using BusinessObjectLayer.Enum;
 using BusinessObjectLayer.IService;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers
@@ -109,7 +111,7 @@ namespace API.Controllers
                 }
 
                 var upload = await _uploadService.UploadFileAsync(createUploadDto, file);
-                    
+
                 return CreatedAtAction(nameof(GetUploadById), new { id = upload.Id }, upload);
             }
             catch (ArgumentException ex)
@@ -170,6 +172,52 @@ namespace API.Controllers
             {
                 _logger.LogError(ex, "Error deleting upload {UploadId}", id);
                 return StatusCode(500, new { message = "An error occurred" });
+            }
+        }
+
+        [HttpPost("send-notification/{uploadId}")]
+        [Authorize(Roles = nameof(RoleEnum.Admin) + "," + nameof(RoleEnum.Staff))]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> CreateNotification(
+        [FromRoute] Guid uploadId,
+        [FromBody] SendNotificationDTO send)
+        {
+            try
+            {
+                var result = await _uploadService.SendNotificationUpload(uploadId, send);
+
+                if (result == null)
+                    return NotFound(new { message = "Upload not found" });
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPut("send-notification/{uploadId}")]
+        [Authorize(Roles = nameof(RoleEnum.Admin) + "," + nameof(RoleEnum.Staff))]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateNotification(
+       [FromRoute] Guid uploadId,
+       [FromBody] SendNotificationDTO send)
+        {
+            try
+            {
+                var result = await _uploadService.UpdateSendNotificationUpload(uploadId, send);
+
+                if (result == null)
+                    return NotFound(new { message = "Upload not found" });
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
         }
     }

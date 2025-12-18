@@ -1,5 +1,7 @@
 ﻿using BusinessObjectLayer.DTOs.Item;
+using BusinessObjectLayer.Enum;
 using BusinessObjectLayer.IService;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers
@@ -116,6 +118,7 @@ namespace API.Controllers
         /// Create new item
         /// </summary>
         [HttpPost]
+        [Authorize(Roles = nameof(RoleEnum.Admin) + "," + nameof(RoleEnum.Staff))]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<ItemDto>> CreateItem([FromBody] CreateItemDto createItemDto)
@@ -139,6 +142,7 @@ namespace API.Controllers
         /// Update existing item
         /// </summary>
         [HttpPut("{id}")]
+        [Authorize(Roles = nameof(RoleEnum.Admin) + "," + nameof(RoleEnum.Staff))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<ItemDto>> UpdateItem(Guid id, [FromBody] UpdateItemDto updateItemDto)
@@ -165,6 +169,7 @@ namespace API.Controllers
         /// Delete item
         /// </summary>
         [HttpDelete("{id}")]
+        [Authorize(Roles = nameof(RoleEnum.Admin) + "," + nameof(RoleEnum.Staff))]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteItem(Guid id)

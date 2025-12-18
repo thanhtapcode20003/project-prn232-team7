@@ -1,4 +1,3 @@
-using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace BusinessObjectLayer.DTOs.Upload
@@ -24,12 +23,12 @@ namespace BusinessObjectLayer.DTOs.Upload
         [StringLength(50, ErrorMessage = "Status cannot exceed 50 characters")]
         public string? Status { get; set; }
 
-        public Guid? Staffid { get; set; }
+        //public Guid? Staffid { get; set; }
 
-        [StringLength(100, ErrorMessage = "Type cannot exceed 100 characters")]
-        public string? Type { get; set; }
+        //[StringLength(100, ErrorMessage = "Type cannot exceed 100 characters")]
+        //public string? Type { get; set; }
 
-        public string? Note { get; set; }
+        //public string? Note { get; set; }
     }
 }
 

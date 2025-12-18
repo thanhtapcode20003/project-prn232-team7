@@ -98,9 +98,6 @@ namespace Repository
             if (staffId.HasValue)
                 query = query.Where(u => u.Staffid == staffId.Value);
 
-            if (!string.IsNullOrEmpty(type))
-                query = query.Where(u => u.Type == type);
-
             if (!string.IsNullOrEmpty(searchTerm))
                 query = query.Where(u =>
                     u.Name.Contains(searchTerm) ||
@@ -144,9 +141,6 @@ namespace Repository
 
             if (staffId.HasValue)
                 query = query.Where(u => u.Staffid == staffId.Value);
-
-            if (!string.IsNullOrEmpty(type))
-                query = query.Where(u => u.Type == type);
 
             if (!string.IsNullOrEmpty(searchTerm))
                 query = query.Where(u =>

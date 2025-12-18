@@ -3,6 +3,7 @@ using BusinessObjectLayer.Exceptions;
 using BusinessObjectLayer.IService;
 using DataAccessLayer.DbContxts;
 using DataAccessLayer.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -19,15 +20,17 @@ public class AuthService : IAuthService
     private readonly LostAndFoundDbContext _context;
     private readonly IConfiguration _configuration;
     private readonly ILogger<AuthService> _logger;
-
+    private readonly IHttpContextAccessor _httpContextAccessor;
     public AuthService(
         LostAndFoundDbContext context,
         IConfiguration configuration,
-        ILogger<AuthService> logger)
+        ILogger<AuthService> logger,
+        IHttpContextAccessor httpContextAccessor)
     {
         _context = context;
         _configuration = configuration;
         _logger = logger;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request)
@@ -225,5 +228,29 @@ public class AuthService : IAuthService
 
         var hashedInput = HashPassword(inputPassword);
         return hashedInput == storedPassword;
+    }
+    private Guid GetCurrentUserId()
+    {
+        var userIdClaim = _httpContextAccessor.HttpContext?.User
+            .FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(userIdClaim))
+        {
+            throw new UnauthorizedException("User not authenticated");
+        }
+
+        return Guid.Parse(userIdClaim);
+    }
+    public User GetCurrentUser()
+    {
+        var userId = GetCurrentUserId();
+        var user = _context.Users
+            .Include(u => u.Role)
+            .FirstOrDefault(u => u.Id == userId);
+        if (user == null)
+        {
+            throw new UnauthorizedException("User not found");
+        }
+        return user;
     }
 }

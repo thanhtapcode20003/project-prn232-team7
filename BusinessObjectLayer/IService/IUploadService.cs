@@ -1,6 +1,5 @@
 using BusinessObjectLayer.DTOs.Upload;
 using Microsoft.AspNetCore.Http;
-using System;
 
 namespace BusinessObjectLayer.IService
 {
@@ -13,9 +12,12 @@ namespace BusinessObjectLayer.IService
         Task<UploadDto?> UpdateUploadAsync(Guid uploadId, UpdateUploadDto updateUploadDto);
         Task<bool> DeleteUploadAsync(Guid uploadId);
         Task<bool> DeleteFileAsync(string fileUrl);
-        
+
         // Search and pagination
         Task<PagedResult<UploadDto>> SearchUploadsAsync(UploadFilterDto filter);
+
+        Task<UploadDto> SendNotificationUpload(Guid uploadId, SendNotificationDTO sendNotificationDTO);
+        Task<UploadDto> UpdateSendNotificationUpload(Guid uploadId, SendNotificationDTO sendNotificationDTO);
     }
 }
 

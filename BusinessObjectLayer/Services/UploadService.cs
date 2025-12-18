@@ -1,4 +1,5 @@
 using BusinessObjectLayer.DTOs.Upload;
+using BusinessObjectLayer.Exceptions;
 using BusinessObjectLayer.IService;
 using DataAccessLayer.Models;
 using Microsoft.AspNetCore.Hosting;
@@ -11,15 +12,19 @@ namespace BusinessObjectLayer.Services
     public class UploadService : IUploadService
     {
         private readonly UploadRepository _uploadRepository;
+        private readonly AuthService _authService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IWebHostEnvironment _environment;
         private const string UploadFolder = "uploads";
         private const long MaxFileSize = 10 * 1024 * 1024; // 10MB
         private readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".pdf", ".doc", ".docx" };
 
-        public UploadService(UploadRepository uploadRepository, IWebHostEnvironment environment)
+        public UploadService(UploadRepository uploadRepository, IWebHostEnvironment environment, AuthService authService, IHttpContextAccessor httpContextAccessor)
         {
             _uploadRepository = uploadRepository;
             _environment = environment;
+            _authService = authService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<List<UploadDto>> GetAllUploadsAsync()
@@ -79,13 +84,18 @@ namespace BusinessObjectLayer.Services
         {
             // Validate file
             ValidateFile(file);
-
+            var user = _authService.GetCurrentUser();
+            if (user == null)
+            {
+                throw new UnauthorizedException("not login");
+            }
             // Create uploads directory if it doesn't exist
             var uploadsPath = Path.Combine(_environment.WebRootPath ?? _environment.ContentRootPath, UploadFolder);
             if (!Directory.Exists(uploadsPath))
             {
                 Directory.CreateDirectory(uploadsPath);
             }
+
 
             // Generate unique filename
             var fileExtension = Path.GetExtension(file.FileName);
@@ -102,7 +112,7 @@ namespace BusinessObjectLayer.Services
             var fileUrl = $"/{UploadFolder}/{fileName}";
 
             // Create upload record
-            var upload = new DataAccessLayer.Models.Upload
+            var upload = new Upload
             {
                 Id = Guid.NewGuid(),
                 Name = createUploadDto.Name,
@@ -111,12 +121,12 @@ namespace BusinessObjectLayer.Services
                 CategoryId = createUploadDto.CategoryId,
                 LostLocation = createUploadDto.LostLocation,
                 LostDate = createUploadDto.LostDate,
+                Userid = user.Id,
                 Content = createUploadDto.Content,
                 Status = createUploadDto.Status,
-                Staffid = createUploadDto.Staffid,
-                Userid = createUploadDto.Userid,
-                Type = createUploadDto.Type,
-                Note = createUploadDto.Note,
+                //Staffid = createUploadDto.Staffid,     
+                //Type = createUploadDto.Type,
+                //Note = createUploadDto.Note,
                 DateCreate = DateTime.UtcNow,
                 DateUpdate = DateTime.UtcNow
             };
@@ -139,9 +149,9 @@ namespace BusinessObjectLayer.Services
             existingUpload.LostDate = updateUploadDto.LostDate;
             existingUpload.Content = updateUploadDto.Content;
             existingUpload.Status = updateUploadDto.Status;
-            existingUpload.Staffid = updateUploadDto.Staffid;
-            existingUpload.Type = updateUploadDto.Type;
-            existingUpload.Note = updateUploadDto.Note;
+            //existingUpload.Staffid = updateUploadDto.Staffid;
+            //existingUpload.Type = updateUploadDto.Type;
+            //existingUpload.Note = updateUploadDto.Note;
             existingUpload.DateUpdate = DateTime.UtcNow;
 
             await _uploadRepository.UpdateAsync(existingUpload);
@@ -153,16 +163,20 @@ namespace BusinessObjectLayer.Services
         {
             var upload = await _uploadRepository.GetByIdAsync(uploadId);
             if (upload == null)
-                return false;
-
-            // Delete physical file if exists
-            if (!string.IsNullOrEmpty(upload.Img))
             {
-                await DeleteFileAsync(upload.Img);
+                throw new NotFoundException("not found upload with id", uploadId.ToString());
             }
 
+            // Delete physical file if exists
+            //if (!string.IsNullOrEmpty(upload.Img))
+            //{
+            //    await DeleteFileAsync(upload.Img);
+            //}
+
             // Delete database record
-            await _uploadRepository.RemoveAsync(upload);
+            //await _uploadRepository.RemoveAsync(upload);
+            upload.Status = "DELETED";
+            await _uploadRepository.UpdateAsync(upload);
             return true;
         }
 
@@ -170,12 +184,12 @@ namespace BusinessObjectLayer.Services
         {
             try
             {
-                var filePath = fileUrl.StartsWith("/") 
-                    ? fileUrl.Substring(1) 
+                var filePath = fileUrl.StartsWith("/")
+                    ? fileUrl.Substring(1)
                     : fileUrl;
-                
+
                 var fullPath = Path.Combine(_environment.WebRootPath ?? _environment.ContentRootPath, filePath);
-                
+
                 if (File.Exists(fullPath))
                 {
                     File.Delete(fullPath);
@@ -223,13 +237,51 @@ namespace BusinessObjectLayer.Services
                 Staffid = upload.Staffid,
                 DateCreate = upload.DateCreate,
                 Userid = upload.Userid,
-                Type = upload.Type,
                 Note = upload.Note,
                 DateUpdate = upload.DateUpdate,
                 CategoryName = upload.Category?.Name,
                 UserName = upload.User?.Username,
                 StaffName = upload.Staff?.Username
             };
+        }
+
+        public async Task<UploadDto> SendNotificationUpload(Guid uploadId, SendNotificationDTO sendNotificationDTO)
+        {
+            var upload = await _uploadRepository.GetByIdWithDetailsAsync(uploadId);
+            var user = _authService.GetCurrentUser();
+            if (user == null)
+            {
+                throw new UnauthorizedException("not login");
+            }
+            if (upload == null)
+            {
+                throw new NotFoundException("not found upload with id", uploadId.ToString());
+            }
+            upload.Note = sendNotificationDTO.Note;
+            upload.NoteCreate = DateTime.UtcNow;
+            upload.Staffid = user.Id;
+
+            await _uploadRepository.UpdateAsync(upload);
+            return MapToDto(upload);
+        }
+
+        public async Task<UploadDto> UpdateSendNotificationUpload(Guid uploadId, SendNotificationDTO sendNotificationDTO)
+        {
+            var upload = await _uploadRepository.GetByIdWithDetailsAsync(uploadId);
+            if (upload == null)
+            {
+                throw new NotFoundException("not found upload with id", uploadId.ToString());
+            }
+            var user = _authService.GetCurrentUser();
+            if (user == null)
+            {
+                throw new UnauthorizedException("not login");
+            }
+            upload.Note = sendNotificationDTO.Note;
+            upload.NoteUpdate = DateTime.UtcNow;
+            upload.Staffid = user.Id;
+            await _uploadRepository.UpdateAsync(upload);
+            return MapToDto(upload);
         }
     }
 }
