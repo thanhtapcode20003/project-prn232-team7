@@ -1,4 +1,5 @@
 ﻿using BusinessObjectLayer.DTOs.Item;
+using BusinessObjectLayer.Exceptions;
 using BusinessObjectLayer.IService;
 using DataAccessLayer.Models;
 using Repository;
@@ -8,15 +9,17 @@ namespace BusinessObjectLayer.Services
     public class ItemService : IItemService
     {
         private readonly ItemRepository _itemRepository;
+        private readonly AuthService _authService;
 
         public ItemService()
         {
             _itemRepository = new ItemRepository();
         }
 
-        public ItemService(ItemRepository itemRepository)
+        public ItemService(ItemRepository itemRepository, AuthService authService)
         {
             _itemRepository = itemRepository;
+            _authService = authService;
         }
 
         public async Task<List<ItemDto>> GetAllItemsAsync()
@@ -33,6 +36,11 @@ namespace BusinessObjectLayer.Services
 
         public async Task<ItemDto> CreateItemAsync(CreateItemDto createItemDto)
         {
+            var user = _authService.GetCurrentUser();
+            if (user == null)
+            {
+                throw new UnauthorizedException("user not login");
+            }
             var item = new Item
             {
                 Id = Guid.NewGuid(),
@@ -41,11 +49,11 @@ namespace BusinessObjectLayer.Services
                 Img = createItemDto.Img,
                 CategoryId = createItemDto.CategoryId,
                 Status = createItemDto.Status,
-                Date = createItemDto.Date,
+                Date = DateTime.UtcNow,
                 FoundLocation = createItemDto.FoundLocation,
                 CurrentLocationId = createItemDto.CurrentLocationId,
                 Context = createItemDto.Context,
-                UserId = createItemDto.UserId,
+                UserId = user.Id,
                 FoundDate = createItemDto.FoundDate
             };
 
@@ -59,17 +67,23 @@ namespace BusinessObjectLayer.Services
             var existingItem = await _itemRepository.GetByIdAsync(id);
             if (existingItem == null)
                 return null;
-
+            var user = _authService.GetCurrentUser();
+            if (user == null)
+            {
+                throw new UnauthorizedException("user not login");
+            }
+            if (!user.Equals(existingItem.User))
+            {
+                throw new UnauthorizedException("it not of you");
+            }
             existingItem.Name = updateItemDto.Name;
             existingItem.Description = updateItemDto.Description;
             existingItem.Img = updateItemDto.Img;
             existingItem.CategoryId = updateItemDto.CategoryId;
             existingItem.Status = updateItemDto.Status;
-            existingItem.Date = updateItemDto.Date;
             existingItem.FoundLocation = updateItemDto.FoundLocation;
             existingItem.CurrentLocationId = updateItemDto.CurrentLocationId;
             existingItem.Context = updateItemDto.Context;
-            existingItem.UserId = updateItemDto.UserId;
             existingItem.FoundDate = updateItemDto.FoundDate;
 
             await _itemRepository.UpdateAsync(existingItem);
@@ -80,6 +94,15 @@ namespace BusinessObjectLayer.Services
         public async Task<bool> DeleteItemAsync(Guid id)
         {
             var item = await _itemRepository.GetByIdAsync(id);
+            var user = _authService.GetCurrentUser();
+            if (user == null)
+            {
+                throw new UnauthorizedException("user not login");
+            }
+            if (!user.Equals(item.User))
+            {
+                throw new UnauthorizedException("it not of you");
+            }
             if (item == null)
                 return false;
 

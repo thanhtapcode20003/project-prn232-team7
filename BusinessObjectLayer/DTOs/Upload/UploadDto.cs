@@ -1,5 +1,3 @@
-using System;
-
 namespace BusinessObjectLayer.DTOs.Upload
 {
     public class UploadDto
@@ -16,14 +14,15 @@ namespace BusinessObjectLayer.DTOs.Upload
         public Guid? Staffid { get; set; }
         public DateTime? DateCreate { get; set; }
         public Guid Userid { get; set; }
-        public string? Type { get; set; }
+        public Guid CampusId { get; set; }
         public string? Note { get; set; }
         public DateTime? DateUpdate { get; set; }
-        
+
         // Navigation properties
         public string? CategoryName { get; set; }
         public string? UserName { get; set; }
         public string? StaffName { get; set; }
+
     }
 }
 
