@@ -18,12 +18,12 @@ namespace API.Controllers
             _serviceLocationService = serviceLocationService;
 
         }
-        [HttpGet("")]
-        public async Task<IActionResult> GetAllServiceLocations()
-        {
-            var serviceLocations = await _serviceLocationService.GetAll();
-            return Ok(ApiResponse<List<ServiceLocationResponse>>.Ok(serviceLocations, "Get all service locations successfully"));
-        }
+        //[HttpGet("")]
+        //public async Task<IActionResult> GetAllServiceLocations()
+        //{
+        //    var serviceLocations = await _serviceLocationService.GetAll();
+        //    return Ok(ApiResponse<List<ServiceLocationResponse>>.Ok(serviceLocations, "Get all service locations successfully"));
+        //}
         [HttpGet("{serviceLocationId}")]
         public async Task<IActionResult> GetServiceLocationById([FromRoute] Guid serviceLocationId)
         {
