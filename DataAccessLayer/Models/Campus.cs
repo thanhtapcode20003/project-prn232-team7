@@ -20,4 +20,6 @@ public partial class Campus
     public DateTime? Dateupdate { get; set; }
 
     public virtual ICollection<ServiceLocation> ServiceLocations { get; set; } = new List<ServiceLocation>();
+
+    public virtual ICollection<Upload> Uploads { get; set; } = new List<Upload>();
 }

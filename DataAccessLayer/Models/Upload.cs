@@ -15,6 +15,8 @@ public partial class Upload
 
     public Guid CategoryId { get; set; }
 
+    public Guid? CampusId { get; set; }
+
     public string? LostLocation { get; set; }
 
     public DateTime? LostDate { get; set; }
@@ -36,6 +38,8 @@ public partial class Upload
     public DateTime? NoteUpdate { get; set; }
 
     public DateTime? DateUpdate { get; set; }
+
+    public virtual Campus? Campus { get; set; }
 
     public virtual Category Category { get; set; } = null!;
 
