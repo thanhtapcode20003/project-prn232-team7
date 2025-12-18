@@ -22,6 +22,8 @@ namespace BusinessObjectLayer.DTOs.Upload
 
         [StringLength(50, ErrorMessage = "Status cannot exceed 50 characters")]
         public string? Status { get; set; }
+        [Required(ErrorMessage = "Campus ID is required")]
+        public Guid CampusId { get; set; }
 
         //public Guid? Staffid { get; set; }
 

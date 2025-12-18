@@ -14,17 +14,19 @@ namespace BusinessObjectLayer.Services
         private readonly UploadRepository _uploadRepository;
         private readonly AuthService _authService;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly CampusService _campusService;
         private readonly IWebHostEnvironment _environment;
         private const string UploadFolder = "uploads";
         private const long MaxFileSize = 10 * 1024 * 1024; // 10MB
         private readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".pdf", ".doc", ".docx" };
 
-        public UploadService(UploadRepository uploadRepository, IWebHostEnvironment environment, AuthService authService, IHttpContextAccessor httpContextAccessor)
+        public UploadService(UploadRepository uploadRepository, IWebHostEnvironment environment, AuthService authService, IHttpContextAccessor httpContextAccessor, CampusService campusService)
         {
             _uploadRepository = uploadRepository;
             _environment = environment;
             _authService = authService;
             _httpContextAccessor = httpContextAccessor;
+            _campusService = campusService;
         }
 
         public async Task<List<UploadDto>> GetAllUploadsAsync()
@@ -95,8 +97,11 @@ namespace BusinessObjectLayer.Services
             {
                 Directory.CreateDirectory(uploadsPath);
             }
-
-
+            var campus = await _campusService.GetCampusById(createUploadDto.CampusId);
+            if (campus == null)
+            {
+                throw new NotFoundException("not found campus with id", createUploadDto.CampusId.ToString());
+            }
             // Generate unique filename
             var fileExtension = Path.GetExtension(file.FileName);
             var fileName = $"{Guid.NewGuid()}{fileExtension}";
@@ -112,6 +117,7 @@ namespace BusinessObjectLayer.Services
             var fileUrl = $"/{UploadFolder}/{fileName}";
 
             // Create upload record
+
             var upload = new Upload
             {
                 Id = Guid.NewGuid(),
@@ -122,6 +128,7 @@ namespace BusinessObjectLayer.Services
                 LostLocation = createUploadDto.LostLocation,
                 LostDate = createUploadDto.LostDate,
                 Userid = user.Id,
+                CampusId = campus.CampusId,
                 Content = createUploadDto.Content,
                 Status = createUploadDto.Status,
                 //Staffid = createUploadDto.Staffid,     
@@ -141,13 +148,18 @@ namespace BusinessObjectLayer.Services
             var existingUpload = await _uploadRepository.GetByIdAsync(uploadId);
             if (existingUpload == null)
                 return null;
-
+            var campus = await _campusService.GetCampusById(updateUploadDto.CampusId);
+            if (campus == null)
+            {
+                throw new NotFoundException("not found campus with id", updateUploadDto.CampusId.ToString());
+            }
             existingUpload.Name = updateUploadDto.Name;
             existingUpload.Description = updateUploadDto.Description;
             existingUpload.CategoryId = updateUploadDto.CategoryId;
             existingUpload.LostLocation = updateUploadDto.LostLocation;
             existingUpload.LostDate = updateUploadDto.LostDate;
             existingUpload.Content = updateUploadDto.Content;
+            existingUpload.CampusId = campus.CampusId;
             existingUpload.Status = updateUploadDto.Status;
             //existingUpload.Staffid = updateUploadDto.Staffid;
             //existingUpload.Type = updateUploadDto.Type;
@@ -237,6 +249,7 @@ namespace BusinessObjectLayer.Services
                 Staffid = upload.Staffid,
                 DateCreate = upload.DateCreate,
                 Userid = upload.Userid,
+                //CampusId = upload.CampusId,
                 Note = upload.Note,
                 DateUpdate = upload.DateUpdate,
                 CategoryName = upload.Category?.Name,

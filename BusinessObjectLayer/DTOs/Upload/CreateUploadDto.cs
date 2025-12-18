@@ -27,7 +27,8 @@ namespace BusinessObjectLayer.DTOs.Upload
 
         [Required(ErrorMessage = "User ID is required")]
         public Guid Userid { get; set; }
-
+        [Required(ErrorMessage = "Campus ID is required")]
+        public Guid CampusId { get; set; }
         //[StringLength(100, ErrorMessage = "Type cannot exceed 100 characters")]
         //public string? Type { get; set; }
 
