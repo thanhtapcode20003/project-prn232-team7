@@ -84,25 +84,19 @@ namespace API.Controllers
         [ProducesResponseType(typeof(ApiResponse<ReturnRecordDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiError), StatusCodes.Status409Conflict)]
         public async Task<ActionResult<ApiResponse<ReturnRecordDto>>> Create([FromForm] CreateReturnRecordDto dto)
         {
-            try
-            {
-                if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-                var created = await _returnRecordService.CreateAsync(dto);
-                return CreatedAtAction(
-                    nameof(GetById),
-                    new { id = created.Id },
-                    ApiResponse<ReturnRecordDto>.Ok(created, "Return record created successfully")
-                );
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating return record");
-                return StatusCode(500, new { message = "An error occurred while creating return record" });
-            }
+            var created = await _returnRecordService.CreateAsync(dto);
+            return CreatedAtAction(
+                nameof(GetById),
+                new { id = created.Id },
+                ApiResponse<ReturnRecordDto>.Ok(created, "Return record created successfully")
+            );
         }
 
         /// <summary>
@@ -112,8 +106,9 @@ namespace API.Controllers
         [Consumes("multipart/form-data")]
         [Authorize(Roles = nameof(RoleEnum.Admin) + "," + nameof(RoleEnum.Staff))]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<ApiResponse<ReturnRecordDto>>> Update(Guid id, [FromForm] UpdateReturnRecordDto dto)
         {
             if (!ModelState.IsValid)
